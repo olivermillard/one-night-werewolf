@@ -52,14 +52,19 @@ export function LobbyScreen({
   const errors = hardValidateDeck(deck, playerCount);
   const counts = useMemo(() => countRoles(deck), [deck]);
 
-  function toggle(role: Role) {
+  /** Tap a card: add a copy; once it's full (or the deck is), go back to none. */
+  function cycle(role: Role) {
     const used = counts[role];
     if (used < ROLE_COPIES[role] && deck.length < 13) {
       setDeck([...deck, role]);
-    } else if (used > 0) {
-      const index = deck.lastIndexOf(role);
-      setDeck(deck.filter((_, i) => i !== index));
+    } else {
+      setDeck(deck.filter((item) => item !== role));
     }
+  }
+
+  function removeOne(role: Role) {
+    const index = deck.lastIndexOf(role);
+    if (index !== -1) setDeck(deck.filter((_, i) => i !== index));
   }
 
   function applyPreset() {
@@ -131,7 +136,7 @@ export function LobbyScreen({
       </SectionHeading>
       {view.me.isHost ? (
         <p className="-mt-1 mb-3 text-center text-sm text-muted">
-          Tap a card to add a copy, tap a full card to remove one.{" "}
+          Tap a card to add a copy; tapping a full card clears it. Use − to remove one.{" "}
           <button type="button" className="text-gold underline underline-offset-4" onClick={applyPreset}>
             Use recommended
           </button>
@@ -141,27 +146,39 @@ export function LobbyScreen({
         {rolesInWakeOrder.map((role) => {
           const used = counts[role];
           return (
-            <button
-              key={role}
-              type="button"
-              disabled={!view.me.isHost}
-              onClick={() => toggle(role)}
-              aria-label={`${ROLE_INFO[role].name}: ${used} of ${ROLE_COPIES[role]} in play`}
-              className={`relative text-left transition-[opacity,filter,transform] duration-150 active:scale-[0.97] disabled:active:scale-100 ${
-                used ? "" : "opacity-45 grayscale-[60%]"
-              }`}
-            >
-              <MiniRole role={role} />
-              <span
-                className={`absolute right-1 top-1 min-w-7 rounded-full border px-1.5 text-center font-[family-name:var(--font-display)] text-sm ${
-                  used
-                    ? "border-[#f0d89a] bg-gold text-[#1c120a]"
-                    : "border-line bg-panel text-muted"
+            <div key={role} className="relative">
+              <button
+                type="button"
+                disabled={!view.me.isHost}
+                onClick={() => cycle(role)}
+                aria-label={`${ROLE_INFO[role].name}: ${used} of ${ROLE_COPIES[role]} in play. Tap to add one.`}
+                className={`relative block w-full text-left transition-[opacity,filter,transform] duration-150 active:scale-[0.97] disabled:active:scale-100 ${
+                  used ? "" : "opacity-45 grayscale-[60%]"
                 }`}
               >
-                {used}/{ROLE_COPIES[role]}
-              </span>
-            </button>
+                <MiniRole role={role} />
+                <span
+                  className={`absolute right-1 top-1 min-w-7 rounded-full border px-1.5 text-center font-[family-name:var(--font-display)] text-sm ${
+                    used
+                      ? "border-[#f0d89a] bg-gold text-[#1c120a]"
+                      : "border-line bg-panel text-muted"
+                  }`}
+                >
+                  {used}/{ROLE_COPIES[role]}
+                </span>
+              </button>
+              {/* Roles with several copies get a − so you can step back down. */}
+              {view.me.isHost && ROLE_COPIES[role] > 1 && used > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => removeOne(role)}
+                  aria-label={`Remove one ${ROLE_INFO[role].name}`}
+                  className="absolute left-1 top-1 flex h-7 w-7 items-center justify-center rounded-full border border-[#f0d89a] bg-[#120d0a]/90 text-lg leading-none text-gold active:scale-95"
+                >
+                  −
+                </button>
+              ) : null}
+            </div>
           );
         })}
       </div>

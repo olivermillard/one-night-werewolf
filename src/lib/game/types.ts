@@ -146,6 +146,13 @@ export interface GameState {
    * who took `slots[i]`. Absent in games dealt before picking existed.
    */
   table?: { slots: Role[]; claims: (PlayerId | null)[] };
+  /** A tie-break vote in progress (or held), when a tie decides who dies. */
+  runoff?: {
+    locked: PlayerId[];
+    candidates: PlayerId[];
+    seats: number;
+    votes: Record<PlayerId, PlayerId[]>;
+  };
 }
 
 export function assertNever(value: never): never {

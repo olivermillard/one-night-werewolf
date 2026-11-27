@@ -145,6 +145,24 @@ export function RevealScreen({
           Nobody got more than one vote, so nobody died.
         </p>
       ) : null}
+      {reveal.runoff ? (
+        <div className="mt-3 rounded-xl border border-line/70 bg-panel/50 px-4 py-3">
+          <p className="small-caps text-sm tracking-[0.2em] text-gold">Tie-break</p>
+          <p className="mt-1 leading-snug text-[#e6d8ba]">
+            {[...reveal.runoff.candidates]
+              .sort((a, b) => (reveal.runoff!.tally[b] ?? 0) - (reveal.runoff!.tally[a] ?? 0))
+              .map((id) => {
+                const n = reveal.runoff!.tally[id] ?? 0;
+                return `${nameOf(id)} ${n} vote${n === 1 ? "" : "s"}`;
+              })
+              .join(" · ")}
+          </p>
+          <p className="text-sm text-muted">
+            {reveal.runoff.seats === 1 ? "One place" : `${reveal.runoff.seats} places`} decided by a
+            one-vote tie-break between the tied players.
+          </p>
+        </div>
+      ) : null}
 
       {/* 4. Every card */}
       <SectionHeading>Every card</SectionHeading>

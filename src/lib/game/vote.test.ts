@@ -125,7 +125,8 @@ describe("two votes per player", () => {
       },
     });
     expect(result.tally).toEqual({ alice: 3, bob: 2, cara: 2, drew: 0 });
-    // Top two die; bob and cara are tied for second, so both go.
+    // bob and cara tie for second. (The server holds a tie-break for this;
+    // with none held, everyone tied dies.)
     expect(result.deaths).toEqual(["alice", "bob", "cara"]);
     expect(result.winners.village).toBe(true);
   });

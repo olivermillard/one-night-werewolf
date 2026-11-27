@@ -45,6 +45,13 @@ export interface RevealPayload {
   doppelgangerCopy: Role | null;
   nightLog: NightLogEntry[];
   houseRules: HouseRules;
+  /** The tie-break, if one was held. */
+  runoff: {
+    candidates: string[];
+    seats: number;
+    votes: Record<string, string[]>;
+    tally: Record<string, number>;
+  } | null;
 }
 
 export interface PrivateView {
@@ -86,6 +93,8 @@ export interface GameView {
   me: PublicPlayer;
   private: PrivateView;
   night: NightProgress | null;
+  /** A tie-break vote in progress: the tied players and how many will die. */
+  runoff: { candidates: string[]; seats: number; locked: string[] } | null;
   table: TableView | null;
   waitingOn: WaitingOn | null;
   /** The deployment that produced this view; see next.config.ts. */

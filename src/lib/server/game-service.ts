@@ -12,7 +12,10 @@ import {
   resolveVotes,
   normalizeVotes,
   validateBallot,
+  validateRunoffBallot,
   hasVoted,
+  planDeaths,
+  runoffTally,
   type GameState,
   type Phase,
   type Player,
@@ -268,31 +271,64 @@ function applyClock(
   }
 
   if (nextRoom.phase === "vote" && nextSecret) {
-    const everyoneVoted = players.every(
-      (player) => hasVoted(nextSecret!.state.votes, player.id),
-    );
-    if (players.length >= 3 && everyoneVoted) {
-      const resolution = resolveVotes({
-        players: toEnginePlayers(players),
-        current: nextSecret.state.current,
-        doppelgangerCopy: nextSecret.state.doppelgangerCopy,
-        votes: nextSecret.state.votes,
-        houseRules: nextSecret.state.houseRules,
-      });
-      nextSecret = {
-        ...nextSecret,
-        state: {
-          ...nextSecret.state,
-          deaths: resolution.deaths,
-          winners: resolution.winners,
-        },
-      };
-      nextRoom = { ...nextRoom, phase: "reveal" };
+    const finished = advanceVoting(nextSecret.state, players);
+    if (finished.changed) {
+      nextSecret = { ...nextSecret, state: finished.state };
+      if (finished.reveal) nextRoom = { ...nextRoom, phase: "reveal" };
       changed = true;
     }
   }
 
   return { room: nextRoom, secret: nextSecret, changed };
+}
+
+/**
+ * Move voting along once everyone has voted: either open a tie-break round
+ * (when a tie decides who dies) or resolve deaths and winners for the reveal.
+ */
+function advanceVoting(
+  state: GameState,
+  players: PlayerRow[],
+): { state: GameState; reveal: boolean; changed: boolean } {
+  const enginePlayers = toEnginePlayers(players);
+  const allVoted = (votes: Record<string, string[]>) =>
+    players.length >= 3 && players.every((player) => hasVoted(votes, player.id));
+
+  if (!state.runoff) {
+    if (!allVoted(state.votes)) return { state, reveal: false, changed: false };
+    const plan = planDeaths(enginePlayers, state.votes);
+    if (plan.kind === "runoff") {
+      return {
+        state: {
+          ...state,
+          runoff: {
+            locked: plan.locked,
+            candidates: plan.candidates,
+            seats: plan.seats,
+            votes: {},
+          },
+        },
+        reveal: false,
+        changed: true,
+      };
+    }
+  } else if (!allVoted(state.runoff.votes)) {
+    return { state, reveal: false, changed: false };
+  }
+
+  const resolution = resolveVotes({
+    players: enginePlayers,
+    current: state.current,
+    doppelgangerCopy: state.doppelgangerCopy,
+    votes: state.votes,
+    houseRules: state.houseRules,
+    runoff: state.runoff,
+  });
+  return {
+    state: { ...state, deaths: resolution.deaths, winners: resolution.winners },
+    reveal: true,
+    changed: true,
+  };
 }
 
 async function persist(args: {
@@ -363,6 +399,7 @@ function buildReveal(state: GameState): RevealPayload {
     doppelgangerCopy: state.doppelgangerCopy,
     votes: state.votes,
     houseRules: state.houseRules,
+    runoff: state.runoff,
   });
   return {
     votes: state.votes,
@@ -376,6 +413,14 @@ function buildReveal(state: GameState): RevealPayload {
     doppelgangerCopy: state.doppelgangerCopy,
     nightLog: state.nightLog,
     houseRules: state.houseRules ?? DEFAULT_HOUSE_RULES,
+    runoff: state.runoff
+      ? {
+          candidates: state.runoff.candidates,
+          seats: state.runoff.seats,
+          votes: state.runoff.votes,
+          tally: runoffTally(state.runoff),
+        }
+      : null,
   };
 }
 
@@ -435,8 +480,14 @@ function buildView(
       privateView.eyesClosed = !privateView.prompt;
     }
     if (room.phase === "vote" || room.phase === "reveal") {
-      privateView.myVotes = secret.state.votes[me.id] ?? [];
-      privateView.hasVoted = hasVoted(secret.state.votes, me.id);
+      // During a tie-break, "my vote" is my tie-break vote.
+      const round =
+        room.phase === "vote" && secret.state.runoff
+          ? secret.state.runoff.votes
+          : secret.state.votes;
+      privateView.myVotes = round[me.id] ?? [];
+      privateView.hasVoted = hasVoted(round, me.id);
+      privateView.voteCount = Object.keys(round).length;
     }
     if (room.phase === "reveal") {
       privateView.reveal = buildReveal(secret.state);
@@ -460,11 +511,22 @@ function buildView(
     };
   }
 
+  // The tie-break is public: everyone sees who is tied and how many die.
+  const runoff =
+    room.phase === "vote" && secret?.state.runoff
+      ? {
+          candidates: secret.state.runoff.candidates,
+          seats: secret.state.runoff.seats,
+          locked: secret.state.runoff.locked,
+        }
+      : null;
+
   return {
     room: publicRoom,
     me: mePublic,
     private: privateView,
     night,
+    runoff,
     table,
     waitingOn: me.is_host ? waitingOn(room, players, secret) : null,
     buildId: process.env.NEXT_PUBLIC_BUILD_ID,
@@ -492,9 +554,11 @@ function waitingOn(
     return { action: "say they're ready", names: names(players.filter((p) => !p.ready)) };
   }
   if (room.phase === "vote" && secret) {
+    const runoff = secret.state.runoff;
+    const round = runoff ? runoff.votes : secret.state.votes;
     return {
-      action: "vote",
-      names: names(players.filter((p) => !hasVoted(secret.state.votes, p.id))),
+      action: runoff ? "vote in the tie-break" : "vote",
+      names: names(players.filter((p) => !hasVoted(round, p.id))),
     };
   }
   return null;
@@ -788,40 +852,39 @@ async function runCommandOnce(args: {
       const targets = Array.isArray(command.targetPlayerIds)
         ? command.targetPlayerIds
         : [];
-      const ballotError = validateBallot(
-        me.id,
-        targets,
-        players.map((player) => player.id),
-      );
-      if (ballotError) throw new HttpError(400, ballotError);
-      if (hasVoted(secret.state.votes, me.id)) {
-        throw new HttpError(400, "You already voted.");
-      }
-      const votes = {
-        ...secret.state.votes,
-        [me.id]: targets,
-      };
-      secret = { ...secret, state: { ...secret.state, votes } };
-      const everyoneVoted = players.every((player) => hasVoted(votes, player.id));
-      if (everyoneVoted) {
-        const resolution = resolveVotes({
-          players: toEnginePlayers(players),
-          current: secret.state.current,
-          doppelgangerCopy: secret.state.doppelgangerCopy,
-          votes,
-          houseRules: secret.state.houseRules,
-        });
+      const runoff = secret.state.runoff;
+      if (runoff) {
+        // Tie-break round: one vote among the tied players, or a skip.
+        const runoffError = validateRunoffBallot(me.id, targets, runoff);
+        if (runoffError) throw new HttpError(400, runoffError);
+        if (hasVoted(runoff.votes, me.id)) {
+          throw new HttpError(400, "You already voted in the tie-break.");
+        }
         secret = {
           ...secret,
           state: {
             ...secret.state,
-            votes,
-            deaths: resolution.deaths,
-            winners: resolution.winners,
+            runoff: { ...runoff, votes: { ...runoff.votes, [me.id]: targets } },
           },
         };
-        room = { ...room, phase: "reveal" };
+      } else {
+        const ballotError = validateBallot(
+          me.id,
+          targets,
+          players.map((player) => player.id),
+        );
+        if (ballotError) throw new HttpError(400, ballotError);
+        if (hasVoted(secret.state.votes, me.id)) {
+          throw new HttpError(400, "You already voted.");
+        }
+        secret = {
+          ...secret,
+          state: { ...secret.state, votes: { ...secret.state.votes, [me.id]: targets } },
+        };
       }
+      const finished = advanceVoting(secret.state, players);
+      secret = { ...secret, state: finished.state };
+      if (finished.reveal) room = { ...room, phase: "reveal" };
       bump = true;
       break;
     }
