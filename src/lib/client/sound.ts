@@ -29,11 +29,24 @@ function getContext(): AudioContext | null {
   return context;
 }
 
-/** Call from a user gesture so later sounds are allowed to play. */
+/**
+ * Call from a user gesture so later sounds are allowed to play. Safe to call
+ * on every tap: it only does work while audio is still locked (phones can
+ * re-suspend audio after the screen locks).
+ */
 export function unlockAudio(): void {
+  // iPhone: play as media, so the ring/silent switch doesn't mute it.
+  const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+  if (session && session.type !== "playback") {
+    try {
+      session.type = "playback";
+    } catch {
+      // Older Safari: ignore.
+    }
+  }
   const ctx = getContext();
-  if (!ctx) return;
-  if (ctx.state === "suspended") void ctx.resume();
+  if (!ctx || ctx.state === "running") return;
+  void ctx.resume();
   // iOS needs something actually played during the gesture.
   const buffer = ctx.createBuffer(1, 1, 22050);
   const source = ctx.createBufferSource();

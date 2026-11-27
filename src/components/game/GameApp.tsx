@@ -6,6 +6,7 @@ import { LobbyScreen, type LobbySettings } from "@/components/game/LobbyScreen";
 import { NightScreen } from "@/components/game/NightScreen";
 import { RevealScreen } from "@/components/game/RevealScreen";
 import { CardBack } from "@/components/cards/RoleCard";
+import { Candle } from "@/components/game/Candle";
 import {
   Button,
   ErrorBanner,
@@ -128,15 +129,20 @@ export function GameApp({ code }: { code?: string }) {
     };
   }, [roomId, roomCode, session, refresh]);
 
-  // Browsers only allow sound after a tap, so unlock audio on the first one.
+  // Browsers only allow sound after a tap. On phones only the end of a touch
+  // counts (not pointerdown), so listen for those, on every tap: a locked
+  // screen can suspend audio again between taps.
   useEffect(() => {
     const unlock = () => unlockAudio();
-    window.addEventListener("pointerdown", unlock, { once: true });
-    return () => window.removeEventListener("pointerdown", unlock);
+    const events = ["touchend", "pointerup", "click", "keydown"] as const;
+    for (const name of events) window.addEventListener(name, unlock, { passive: true });
+    return () => {
+      for (const name of events) window.removeEventListener(name, unlock);
+    };
   }, []);
 
-  // Play the host's chosen sound the moment the last vote is in
-  // (vote -> reveal). Only on that transition, so reloading the reveal
+  // Play the host's chosen sound on every phone the moment the last vote is
+  // in (vote -> reveal). Only on that transition, so reloading the reveal
   // doesn't replay it.
   const phase = view?.room.phase;
   const endSound = view?.room.endSound;
@@ -207,7 +213,10 @@ export function GameApp({ code }: { code?: string }) {
     return (
       <Shell>
         <ErrorBanner message={error} />
-        <p className="mt-20 text-center text-lg text-muted">Lighting the candles…</p>
+        <div className="flex flex-1 flex-col items-center justify-center pb-16">
+          <Candle className="h-40 w-20" />
+          <p className="mt-4 text-center text-lg text-muted">Lighting the candles…</p>
+        </div>
       </Shell>
     );
   }

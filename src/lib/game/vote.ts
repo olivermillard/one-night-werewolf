@@ -76,11 +76,25 @@ export function tallyVotes(players: Player[], votes: Votes): Record<PlayerId, nu
   return tally;
 }
 
+/** How many of the top vote-getters die: one per vote each player has. */
+export const DEATHS_PER_VOTE = MAX_VOTES_PER_PLAYER;
+
+/**
+ * The top two vote-getters die (everyone tied with them too), but nobody
+ * dies on fewer than 2 votes. With 6, 5, 5, 1 votes the 6 and both 5s die;
+ * with 6, 1, 1 only the 6 dies.
+ */
 export function initialDeathsFromVotes(players: Player[], votes: Votes): PlayerId[] {
   const tally = tallyVotes(players, votes);
-  const max = Math.max(0, ...Object.values(tally));
-  if (max < 2) return [];
-  return players.filter((player) => tally[player.id] === max).map((p) => p.id);
+  const counts = players
+    .map((player) => tally[player.id] ?? 0)
+    .filter((count) => count >= 2)
+    .sort((a, b) => b - a);
+  if (counts.length === 0) return [];
+  const cutoff = counts[Math.min(DEATHS_PER_VOTE, counts.length) - 1]!;
+  return players
+    .filter((player) => (tally[player.id] ?? 0) >= cutoff && (tally[player.id] ?? 0) >= 2)
+    .map((p) => p.id);
 }
 
 export function applyHunterDeaths(args: {

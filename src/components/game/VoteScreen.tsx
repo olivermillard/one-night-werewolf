@@ -33,6 +33,8 @@ export function VoteScreen({
       <Title kicker="Vote">Point at up to two players</Title>
       <p className="mb-5 text-center text-muted">
         {view.private.voteCount}/{view.private.playerCount} votes in. Votes stay hidden until everyone has voted.
+        <br />
+        The two players with the most votes die (2 votes or more).
       </p>
       {view.room.houseRules.allWerewolvesMustDie ? (
         <p className="small-caps mb-4 text-center text-sm tracking-[0.15em] text-gold">

@@ -197,7 +197,48 @@ textarea {
   animation: card-mine 0.97s forwards;
 }
 
+/* Candle flame: an irregular flicker and sway from the wick, never quite repeating. */
+@keyframes candle-flicker {
+  0% { transform: scale(1, 1) skewX(0deg); }
+  9% { transform: scale(0.97, 1.06) skewX(-2deg); }
+  17% { transform: scale(1.02, 0.94) skewX(1.5deg); }
+  26% { transform: scale(0.98, 1.08) skewX(-1deg); }
+  38% { transform: scale(1.03, 0.97) skewX(2.5deg); }
+  47% { transform: scale(0.96, 1.04) skewX(-2.5deg); }
+  58% { transform: scale(1.01, 0.92) skewX(1deg); }
+  69% { transform: scale(0.99, 1.07) skewX(-1.5deg); }
+  81% { transform: scale(1.02, 0.96) skewX(2deg); }
+  90% { transform: scale(0.98, 1.03) skewX(-0.5deg); }
+  100% { transform: scale(1, 1) skewX(0deg); }
+}
+
+@keyframes candle-glow {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  13% { opacity: 1; transform: scale(1.04); }
+  29% { opacity: 0.75; transform: scale(0.97); }
+  44% { opacity: 0.95; transform: scale(1.02); }
+  61% { opacity: 0.7; transform: scale(0.96); }
+  78% { opacity: 1; transform: scale(1.05); }
+}
+
+.candle-flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: candle-flicker 1.7s ease-in-out infinite;
+}
+
+.candle-glow {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: candle-glow 2.3s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .candle-flame,
+  .candle-glow {
+    animation: none;
+  }
+
   .card-mine,
   .card-taken {
     animation: none;
