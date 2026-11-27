@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeVotes, resolveVotes, validateBallot } from "./vote";
+import { hasVoted, normalizeVotes, resolveVotes, validateBallot } from "./vote";
 import { assignedState, playersOf } from "./test-helpers";
 
 const P = playersOf("Alice", "Bob", "Cara", "Drew");
@@ -149,7 +149,7 @@ describe("two votes per player", () => {
     const ids = ["alice", "bob", "cara", "drew"];
     expect(validateBallot("alice", ["bob"], ids)).toBeNull();
     expect(validateBallot("alice", ["bob", "cara"], ids)).toBeNull();
-    expect(validateBallot("alice", [], ids)).toMatch(/at least one/);
+    expect(validateBallot("alice", [], ids)).toBeNull();
     expect(validateBallot("alice", ["bob", "cara", "drew"], ids)).toMatch(/at most 2/);
     expect(validateBallot("alice", ["bob", "bob"], ids)).toMatch(/different/);
     expect(validateBallot("alice", ["alice"], ids)).toMatch(/yourself/);
@@ -157,9 +157,61 @@ describe("two votes per player", () => {
   });
 
   it("reads votes saved in the old single-target format", () => {
-    expect(normalizeVotes({ alice: "bob", bob: ["alice", "cara"], cara: null })).toEqual({
+    expect(
+      normalizeVotes({ alice: "bob", bob: ["alice", "cara"], cara: null, drew: [] }),
+    ).toEqual({
       alice: ["bob"],
       bob: ["alice", "cara"],
+      drew: [],
     });
+  });
+});
+
+describe("skipping a vote", () => {
+  const state = assignedState({
+    players: P,
+    playerRoles: {
+      alice: "werewolf",
+      bob: "villager",
+      cara: "seer",
+      drew: "hunter",
+    },
+    center: ["werewolf", "robber", "troublemaker"],
+  });
+
+  it("counts as having voted but adds no votes", () => {
+    const votes = { alice: [], bob: ["alice"], cara: ["alice"], drew: [] };
+    expect(hasVoted(votes, "alice")).toBe(true);
+    expect(hasVoted(votes, "drew")).toBe(true);
+    expect(hasVoted({ bob: ["alice"] }, "alice")).toBe(false);
+    const result = resolveVotes({
+      players: state.players,
+      current: state.current,
+      doppelgangerCopy: null,
+      votes,
+    });
+    expect(result.tally).toEqual({ alice: 2, bob: 0, cara: 0, drew: 0 });
+    expect(result.deaths).toEqual(["alice"]);
+  });
+
+  it("if everyone skips, nobody dies", () => {
+    const result = resolveVotes({
+      players: state.players,
+      current: state.current,
+      doppelgangerCopy: null,
+      votes: { alice: [], bob: [], cara: [], drew: [] },
+    });
+    expect(result.deaths).toEqual([]);
+    expect(result.winners.werewolf).toBe(true);
+  });
+
+  it("a dying Hunter who skipped takes nobody with them", () => {
+    const result = resolveVotes({
+      players: state.players,
+      current: state.current,
+      doppelgangerCopy: null,
+      votes: { alice: ["drew"], bob: ["drew"], cara: ["drew"], drew: [] },
+    });
+    expect(result.deaths).toEqual(["drew"]);
   });
 });

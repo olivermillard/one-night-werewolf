@@ -1,4 +1,5 @@
-import { Button, Title } from "@/components/game/ui";
+import { CardsInPlay } from "@/components/game/CardsInPlay";
+import { Button, SectionHeading, Title } from "@/components/game/ui";
 import { MAX_VOTES_PER_PLAYER } from "@/lib/game";
 import type { GameView } from "@/lib/view";
 import { useState } from "react";
@@ -11,7 +12,8 @@ export function VoteScreen({
   onVote: (playerIds: string[]) => void;
 }) {
   const locked = view.private.myVotes;
-  const voted = locked.length > 0;
+  const voted = view.private.hasVoted;
+  const skipped = voted && locked.length === 0;
   const [choices, setChoices] = useState<string[]>(locked);
   const selected = voted ? locked : choices;
   const others = view.room.players.filter((player) => player.id !== view.me.id);
@@ -50,18 +52,30 @@ export function VoteScreen({
           </button>
         ))}
       </div>
-      <div className="mt-6">
+      <div className="mt-6 space-y-3">
         <Button
           disabled={voted || choices.length === 0}
           onClick={() => choices.length && onVote(choices)}
         >
-          {voted
-            ? "Vote locked"
-            : choices.length === 0
-              ? "Pick up to two players"
-              : `Lock vote (${choices.length} of ${MAX_VOTES_PER_PLAYER})`}
+          {skipped
+            ? "You skipped your vote"
+            : voted
+              ? "Vote locked"
+              : choices.length === 0
+                ? "Pick up to two players"
+                : `Lock vote (${choices.length} of ${MAX_VOTES_PER_PLAYER})`}
         </Button>
+        {voted ? null : (
+          <Button variant="ghost" onClick={() => onVote([])}>
+            Skip my vote
+          </Button>
+        )}
       </div>
+      <SectionHeading>Cards in play</SectionHeading>
+      <p className="-mt-1 mb-3 text-center text-sm text-muted">
+        Numbered in the order they woke. Three of these are in the center.
+      </p>
+      <CardsInPlay deck={view.room.deck} />
     </>
   );
 }

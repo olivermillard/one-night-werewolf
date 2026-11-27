@@ -9,6 +9,7 @@ import {
   resolveVotes,
   normalizeVotes,
   validateBallot,
+  hasVoted,
   type GameState,
   type Phase,
   type Player,
@@ -258,7 +259,7 @@ function applyClock(
 
   if (nextRoom.phase === "vote" && nextSecret) {
     const everyoneVoted = players.every(
-      (player) => nextSecret!.state.votes[player.id]?.length,
+      (player) => hasVoted(nextSecret!.state.votes, player.id),
     );
     if (players.length >= 3 && everyoneVoted) {
       const resolution = resolveVotes({
@@ -374,6 +375,7 @@ function buildView(
     flash: null,
     eyesClosed: room.phase === "night",
     myVotes: [],
+    hasVoted: false,
     voteCount: secret ? Object.keys(secret.state.votes).length : 0,
     playerCount: players.length,
     reveal: null,
@@ -393,6 +395,7 @@ function buildView(
     }
     if (room.phase === "vote" || room.phase === "reveal") {
       privateView.myVotes = secret.state.votes[me.id] ?? [];
+      privateView.hasVoted = hasVoted(secret.state.votes, me.id);
     }
     if (room.phase === "reveal") {
       privateView.reveal = buildReveal(secret.state);
@@ -679,7 +682,7 @@ async function runCommandOnce(args: {
         players.map((player) => player.id),
       );
       if (ballotError) throw new HttpError(400, ballotError);
-      if (secret.state.votes[me.id]?.length) {
+      if (hasVoted(secret.state.votes, me.id)) {
         throw new HttpError(400, "You already voted.");
       }
       const votes = {
@@ -687,7 +690,7 @@ async function runCommandOnce(args: {
         [me.id]: targets,
       };
       secret = { ...secret, state: { ...secret.state, votes } };
-      const everyoneVoted = players.every((player) => votes[player.id]?.length);
+      const everyoneVoted = players.every((player) => hasVoted(votes, player.id));
       if (everyoneVoted) {
         const resolution = resolveVotes({
           players: toEnginePlayers(players),

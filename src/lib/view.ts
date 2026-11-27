@@ -47,6 +47,8 @@ export interface PrivateView {
   flash: FlashReveal | null;
   eyesClosed: boolean;
   myVotes: string[];
+  /** True once this player has voted or skipped. */
+  hasVoted: boolean;
   voteCount: number;
   playerCount: number;
   reveal: RevealPayload | null;

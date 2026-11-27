@@ -1,4 +1,5 @@
-import { Button, Title } from "@/components/game/ui";
+import { CardsInPlay } from "@/components/game/CardsInPlay";
+import { Button, SectionHeading, Title } from "@/components/game/ui";
 import type { GameView } from "@/lib/view";
 import { useEffect, useState } from "react";
 
@@ -42,6 +43,11 @@ export function DayScreen({
       ) : (
         <p className="mt-8 text-center text-muted">The vote begins when the candle burns out.</p>
       )}
+      <SectionHeading>Cards in play</SectionHeading>
+      <p className="-mt-1 mb-3 text-center text-sm text-muted">
+        Numbered in the order they woke. Three of these are in the center.
+      </p>
+      <CardsInPlay deck={view.room.deck} />
     </>
   );
 }

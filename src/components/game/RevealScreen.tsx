@@ -1,4 +1,5 @@
 import { MiniRole } from "@/components/cards/RoleCard";
+import { CardsInPlay, deckInWakeOrder } from "@/components/game/CardsInPlay";
 import { Button, Panel, SectionHeading, Title } from "@/components/game/ui";
 import {
   CENTER_LABELS,
@@ -7,17 +8,8 @@ import {
   displayName,
   effectiveRole,
   publicNightSteps,
-  type Role,
 } from "@/lib/game";
 import type { GameView } from "@/lib/view";
-
-/** Deck sorted the way the night is called; roles that never wake go last. */
-function deckInWakeOrder(deck: Role[]): Role[] {
-  const order = (role: Role) => ROLE_INFO[role].nightOrder ?? 99;
-  return [...deck].sort(
-    (a, b) => order(a) - order(b) || ROLE_INFO[a].name.localeCompare(ROLE_INFO[b].name),
-  );
-}
 
 export function RevealScreen({
   view,
@@ -80,13 +72,7 @@ export function RevealScreen({
       <p className="mb-3 text-center text-sm text-muted">
         In the order they were called at night
       </p>
-      <ul className="grid grid-cols-3 gap-3">
-        {deckInWakeOrder(deck).map((role, index) => (
-          <li key={`${role}-${index}`}>
-            <MiniRole role={role} />
-          </li>
-        ))}
-      </ul>
+      <CardsInPlay deck={deck} />
 
       <SectionHeading>Order of the night</SectionHeading>
       <ol className="relative space-y-3 border-l border-line pl-5">
@@ -161,7 +147,9 @@ export function RevealScreen({
                   </p>
                 ) : null}
                 <p className="mt-2 text-sm text-muted">
-                  Voted for {votes.length ? votes.map(nameOf).join(" & ") : "nobody"}
+                  {votes.length
+                    ? `Voted for ${votes.map(nameOf).join(" & ")}`
+                    : "Skipped their vote"}
                 </p>
               </Panel>
             </li>

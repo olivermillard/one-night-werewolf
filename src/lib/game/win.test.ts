@@ -5,7 +5,7 @@ import { assignedState, playersOf } from "./test-helpers";
 const P = playersOf("Alice", "Bob", "Cara");
 
 describe("win resolution", () => {
-  it("village wins if at least one werewolf dies", () => {
+  it("village wins if the only werewolf among the players dies", () => {
     const result = resolveWins({
       players: P,
       current: assignedState({
@@ -188,5 +188,86 @@ describe("win resolution", () => {
     });
     expect(result.werewolf).toBe(true);
     expect(result.village).toBe(false);
+  });
+});
+
+describe("every werewolf must die (house rule)", () => {
+  const P4 = playersOf("Alice", "Bob", "Cara", "Drew");
+  const twoWolves = assignedState({
+    players: P4,
+    playerRoles: {
+      alice: "werewolf",
+      bob: "werewolf",
+      cara: "seer",
+      drew: "tanner",
+    },
+    center: ["villager", "robber", "troublemaker"],
+  }).current;
+
+  it("werewolves still win if only one of two werewolves dies", () => {
+    const result = resolveWins({
+      players: P4,
+      current: twoWolves,
+      doppelgangerCopy: null,
+      deaths: ["alice"],
+    });
+    expect(result).toMatchObject({ village: false, werewolf: true, tanner: false });
+  });
+
+  it("village wins when both werewolves die", () => {
+    const result = resolveWins({
+      players: P4,
+      current: twoWolves,
+      doppelgangerCopy: null,
+      deaths: ["alice", "bob"],
+    });
+    expect(result).toMatchObject({ village: true, werewolf: false });
+  });
+
+  it("a Doppelgänger who copied a Werewolf must die too", () => {
+    const current = assignedState({
+      players: P4,
+      playerRoles: {
+        alice: "werewolf",
+        bob: "doppelganger",
+        cara: "seer",
+        drew: "villager",
+      },
+      center: ["werewolf", "robber", "troublemaker"],
+    }).current;
+    const oneDead = resolveWins({
+      players: P4,
+      current,
+      doppelgangerCopy: "werewolf",
+      deaths: ["alice"],
+    });
+    expect(oneDead).toMatchObject({ village: false, werewolf: true });
+    const bothDead = resolveWins({
+      players: P4,
+      current,
+      doppelgangerCopy: "werewolf",
+      deaths: ["alice", "bob"],
+    });
+    expect(bothDead).toMatchObject({ village: true, werewolf: false });
+  });
+
+  it("if the Tanner and one of two werewolves die, only the Tanner wins", () => {
+    const result = resolveWins({
+      players: P4,
+      current: twoWolves,
+      doppelgangerCopy: null,
+      deaths: ["alice", "drew"],
+    });
+    expect(result).toMatchObject({ village: false, werewolf: false, tanner: true });
+  });
+
+  it("if the Tanner and both werewolves die, the Tanner and the village win", () => {
+    const result = resolveWins({
+      players: P4,
+      current: twoWolves,
+      doppelgangerCopy: null,
+      deaths: ["alice", "bob", "drew"],
+    });
+    expect(result).toMatchObject({ village: true, werewolf: false, tanner: true });
   });
 });

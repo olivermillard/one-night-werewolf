@@ -58,7 +58,9 @@ export function resolveWins(args: {
   const minions = minionPlayerIds(players, current, doppelgangerCopy);
   const tanners = tannerPlayerIds(players, current, doppelgangerCopy);
   const werewolvesAmongPlayers = werewolves.length > 0;
-  const werewolfDied = deaths.some((id) => werewolves.includes(id));
+  // House rule: the village needs every Werewolf among the players dead,
+  // not just one of them.
+  const allWerewolvesDied = werewolves.every((id) => deaths.includes(id));
   const tannerDied = deaths.some((id) => tanners.includes(id));
   const nobodyDied = deaths.length === 0;
   const someoneOtherThanMinionDied = deaths.some((id) => !minions.includes(id));
@@ -73,21 +75,24 @@ export function resolveWins(args: {
   }
 
   if (werewolvesAmongPlayers) {
-    if (werewolfDied) {
+    const wolfWord = werewolves.length === 1 ? "The Werewolf" : `All ${werewolves.length} Werewolves`;
+    if (allWerewolvesDied) {
       village = true;
       werewolf = false;
-      reasons.push("At least one Werewolf died, so the village team wins.");
+      reasons.push(`${wolfWord} died, so the village team wins.`);
     } else if (tannerDied) {
       village = false;
       werewolf = false;
       reasons.push(
-        "The Tanner died and no Werewolf died, so the werewolf team does not win.",
+        "The Tanner died and a Werewolf survived, so neither the village nor the werewolf team wins.",
       );
     } else {
       village = false;
       werewolf = true;
       reasons.push(
-        "No Werewolf died and at least one Werewolf is among the players, so the werewolf team wins.",
+        werewolves.length === 1
+          ? "The Werewolf survived, so the werewolf team wins."
+          : "Not every Werewolf died, so the werewolf team wins.",
       );
     }
   } else if (nobodyDied) {

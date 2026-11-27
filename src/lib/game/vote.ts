@@ -21,28 +21,32 @@ export interface VoteResolution {
 
 /**
  * Normalise stored votes. Older games stored a single target per voter as a
- * string; newer ones store a list.
+ * string; newer ones store a list. An empty list means the player skipped.
  */
 export function normalizeVotes(raw: unknown): Votes {
   const votes: Votes = {};
   if (!raw || typeof raw !== "object") return votes;
   for (const [voter, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!Array.isArray(value) && typeof value !== "string") continue;
     const targets = Array.isArray(value) ? value : [value];
-    const clean = targets.filter(
+    votes[voter] = targets.filter(
       (target): target is string => typeof target === "string" && target.length > 0,
     );
-    if (clean.length) votes[voter] = clean;
   }
   return votes;
 }
 
-/** Returns an error message, or null if the ballot is valid. */
+/** Whether a player has cast a ballot (skipping counts). */
+export function hasVoted(votes: Votes, playerId: PlayerId): boolean {
+  return Object.prototype.hasOwnProperty.call(votes, playerId);
+}
+
+/** Returns an error message, or null if the ballot is valid. An empty ballot is a skip. */
 export function validateBallot(
   voterId: PlayerId,
   targets: PlayerId[],
   playerIds: PlayerId[],
 ): string | null {
-  if (targets.length < 1) return "Pick at least one player.";
   if (targets.length > MAX_VOTES_PER_PLAYER) {
     return `You can vote for at most ${MAX_VOTES_PER_PLAYER} players.`;
   }
