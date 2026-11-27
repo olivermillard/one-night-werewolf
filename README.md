@@ -1,4 +1,4 @@
-# One Night Oliver's Werewolf
+# Oliver's One Night Werewolf
 
 > An unofficial fan project, made for playing with friends. Free, with no ads. Not affiliated with or endorsed by Bézier Games. One Night Ultimate Werewolf is a trademark of Bézier Games. The card art, sounds and rules text here are original to this project.
 

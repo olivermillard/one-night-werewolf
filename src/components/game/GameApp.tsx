@@ -228,7 +228,7 @@ export function GameApp({ code }: { code?: string }) {
         <div className="mx-auto mb-6 w-28 -rotate-3">
           <CardBack className="w-full drop-shadow-[0_16px_30px_#000c]" />
         </div>
-        <Title kicker="A game for one night">One Night Oliver&rsquo;s Werewolf</Title>
+        <Title kicker="A game for one night">Oliver&rsquo;s One Night Werewolf</Title>
         <p className="-mt-2 mb-8 text-center text-lg leading-relaxed text-muted">
           Gather your village. Each player uses their own phone, and every card stays secret until dawn.
         </p>
