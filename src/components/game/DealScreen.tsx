@@ -19,17 +19,20 @@ export function DealScreen({
   return (
     <>
       <Title kicker="Look at your card">Keep it secret</Title>
+      <p className="-mt-2 mb-5 text-center text-muted">
+        This is your only look until dawn. Remember it.
+      </p>
       {role ? (
         <RoleCard role={role} flipped={flipped} onClick={() => setFlipped((value) => !value)} />
       ) : (
         <p className="text-muted">Your card is still being dealt.</p>
       )}
       <div className="mt-6 space-y-3">
-        <p className="text-center text-sm text-muted">
-          {readyCount}/{view.room.players.length} ready
+        <p className="small-caps text-center tracking-[0.2em] text-muted">
+          {readyCount} of {view.room.players.length} ready
         </p>
         <Button onClick={onReady} disabled={view.me.ready}>
-          {view.me.ready ? "Waiting for others" : "I looked — close it"}
+          {view.me.ready ? "Waiting for others" : "I have seen my card"}
         </Button>
         {view.me.isHost ? (
           <Button variant="ghost" onClick={onBeginNight}>

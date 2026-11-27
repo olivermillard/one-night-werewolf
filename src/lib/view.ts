@@ -1,3 +1,4 @@
+import type { CalledNightStep } from "@/lib/game/night";
 import type {
   FlashReveal,
   NightLogEntry,
@@ -51,10 +52,18 @@ export interface PrivateView {
   reveal: RevealPayload | null;
 }
 
+export interface NightProgress {
+  /** Steps the narrator calls for this deck, in order (public). */
+  steps: CalledNightStep[];
+  /** Index into steps of the step being played; steps.length when done. */
+  current: number;
+}
+
 export interface GameView {
   room: PublicRoom;
   me: PublicPlayer;
   private: PrivateView;
+  night: NightProgress | null;
 }
 
 export interface SessionPayload {

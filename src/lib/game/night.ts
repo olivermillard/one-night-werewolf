@@ -35,11 +35,9 @@ export function isStepInGame(state: GameState, step: NightStep): boolean {
     case "doppelganger_copy":
       return has("doppelganger");
     case "doppelganger_action":
-      return (
-        has("doppelganger") &&
-        state.doppelgangerCopy !== null &&
-        isImmediateCopyRole(state.doppelgangerCopy)
-      );
+      // Always called when the Doppelgänger is in the deck (as the narrator
+      // does), so skipping it can't reveal which role was copied.
+      return has("doppelganger");
     case "doppelganger_minion":
       return has("doppelganger") && has("minion");
     case "werewolves":
@@ -107,6 +105,42 @@ export function actorsFor(state: GameState, step: NightStep): PlayerId[] {
       return assertNever(step);
   }
 }
+
+/**
+ * The night steps the narrator calls for this deck, in order. Depends only on
+ * which cards are in play (public), never on who holds them or the
+ * Doppelgänger's copy, so it is safe to show everyone.
+ */
+export type CalledNightStep = Exclude<NightStep, "complete">;
+
+export function publicNightSteps(deck: Role[]): CalledNightStep[] {
+  const probe = { deck, doppelgangerCopy: null } as unknown as GameState;
+  return NIGHT_STEPS.filter(
+    (step): step is CalledNightStep =>
+      step !== "complete" && isStepInGame(probe, step),
+  );
+}
+
+export const NIGHT_STEP_INFO: Record<
+  CalledNightStep,
+  { label: string; role: Role }
+> = {
+  doppelganger_copy: { label: "Doppelgänger", role: "doppelganger" },
+  doppelganger_action: { label: "Doppelgänger acts", role: "doppelganger" },
+  doppelganger_minion: { label: "Doppelgänger-Minion", role: "doppelganger" },
+  werewolves: { label: "Werewolves", role: "werewolf" },
+  minion: { label: "Minion", role: "minion" },
+  masons: { label: "Masons", role: "mason" },
+  seer: { label: "Seer", role: "seer" },
+  robber: { label: "Robber", role: "robber" },
+  troublemaker: { label: "Troublemaker", role: "troublemaker" },
+  drunk: { label: "Drunk", role: "drunk" },
+  insomniac: { label: "Insomniac", role: "insomniac" },
+  doppelganger_insomniac: {
+    label: "Doppelgänger-Insomniac",
+    role: "doppelganger",
+  },
+};
 
 export function werewolvesAtNight(state: GameState): PlayerId[] {
   return actorsFor(

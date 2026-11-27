@@ -29,10 +29,10 @@ export function DayScreen({
   return (
     <>
       <Title kicker="Day">Find the Werewolves</Title>
-      <p className="mb-6 text-center font-[family-name:var(--font-display)] text-5xl text-gold">
+      <p className="mb-6 text-center font-[family-name:var(--font-display)] text-7xl tabular-nums text-gold [text-shadow:0_0_30px_#a87a3266]">
         {minutes}:{seconds}
       </p>
-      <p className="mb-4 text-sm text-muted">
+      <p className="mb-4 text-center text-lg text-muted">
         Your card stays face down until the reveal. It may have been swapped in the night.
       </p>
       {view.me.isHost ? (
@@ -40,7 +40,7 @@ export function DayScreen({
           <Button onClick={onStartVote}>Start the vote</Button>
         </div>
       ) : (
-        <p className="mt-6 text-center text-muted">Vote begins when the timer ends.</p>
+        <p className="mt-8 text-center text-muted">The vote begins when the candle burns out.</p>
       )}
     </>
   );

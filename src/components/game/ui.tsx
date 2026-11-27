@@ -1,11 +1,28 @@
 "use client";
 
+import { NIGHT_STEP_INFO } from "@/lib/game";
+import type { NightProgress } from "@/lib/view";
 import { useEffect, useState, type ReactNode } from "react";
 
 export function Shell({ children }: { children: ReactNode }) {
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-4 pb-10 pt-[max(1.25rem,env(safe-area-inset-top))]">
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pb-24 pt-[max(1.5rem,env(safe-area-inset-top))]">
       {children}
+    </div>
+  );
+}
+
+/** A thin gold rule with a centred lozenge, like a manuscript divider. */
+export function Flourish({ className = "" }: { className?: string }) {
+  return (
+    <div className={`flex items-center gap-3 text-gold-deep ${className}`} aria-hidden>
+      <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,currentColor)]" />
+      <svg viewBox="0 0 24 12" className="h-3 w-6" fill="currentColor">
+        <path d="M12 0 18 6 12 12 6 6Z" />
+        <circle cx="2" cy="6" r="1.4" />
+        <circle cx="22" cy="6" r="1.4" />
+      </svg>
+      <span className="h-px flex-1 bg-[linear-gradient(270deg,transparent,currentColor)]" />
     </div>
   );
 }
@@ -18,13 +35,14 @@ export function Title({
   children: ReactNode;
 }) {
   return (
-    <header className="mb-6">
+    <header className="mb-6 text-center">
       {kicker ? (
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">{kicker}</p>
+        <p className="small-caps text-sm tracking-[0.3em] text-gold">{kicker}</p>
       ) : null}
-      <h1 className="font-[family-name:var(--font-display)] text-3xl leading-tight">
+      <h1 className="mt-1 font-[family-name:var(--font-display)] text-[2.15rem] leading-tight text-[#f3e6c8] [text-shadow:0_2px_12px_#000]">
         {children}
       </h1>
+      <Flourish className="mx-auto mt-3 max-w-[14rem]" />
     </header>
   );
 }
@@ -44,36 +62,103 @@ export function Button({
 }) {
   const styles =
     variant === "primary"
-      ? "bg-gold text-black"
+      ? "border border-[#f0d89a66] bg-[linear-gradient(180deg,#e6c47a,#b88a3c_55%,#9a6e2a)] text-[#1c120a] shadow-[inset_0_1px_0_#fff6,0_8px_20px_#0008] active:brightness-95"
       : variant === "danger"
-        ? "bg-[#b42318] text-white"
-        : "border border-white/15 bg-white/5 text-foreground";
+        ? "border border-[#d0604d66] bg-[linear-gradient(180deg,#a8382a,#7a2116)] text-[#f6e6d4] shadow-[inset_0_1px_0_#fff3,0_8px_20px_#0008]"
+        : "border border-line bg-panel/80 text-foreground active:bg-panel-raised";
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`min-h-12 w-full rounded-2xl px-4 text-base font-semibold disabled:opacity-40 ${styles}`}
+      className={`min-h-13 w-full rounded-lg px-5 font-[family-name:var(--font-display)] text-lg transition-[filter,transform] duration-150 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100 ${styles}`}
     >
       {children}
     </button>
   );
 }
 
-export function Panel({ children }: { children: ReactNode }) {
+export function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-panel/80 p-4">
+    <div className={`gilded rounded-xl bg-[linear-gradient(180deg,#2b2018,#1e1611)] p-4 ${className}`}>
       {children}
     </div>
+  );
+}
+
+export function SectionHeading({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="small-caps mt-8 mb-3 text-center text-base tracking-[0.25em] text-gold">
+      {children}
+    </h2>
   );
 }
 
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p className="mb-4 rounded-2xl border border-red-500/40 bg-red-950/50 px-4 py-3 text-sm text-red-100">
+    <p className="mb-4 rounded-lg border border-[#d0604d66] bg-[#3a120c]/80 px-4 py-3 text-base text-[#f6dcd0]">
       {message}
     </p>
+  );
+}
+
+/**
+ * Which night step is being called. The real game has a narrator calling
+ * each role aloud, so showing the current step to everyone reveals nothing
+ * and lets players see the night is moving.
+ */
+export function NightProgressBar({
+  progress,
+  showCaller = true,
+}: {
+  progress: NightProgress;
+  /** The big "X, wake up…" line; hidden for the player who is acting. */
+  showCaller?: boolean;
+}) {
+  const { steps, current } = progress;
+  if (steps.length === 0) return null;
+  const currentStep = steps[current];
+  const nextStep = steps[current + 1];
+  const label = currentStep ? NIGHT_STEP_INFO[currentStep].label : "Dawn";
+  return (
+    <div
+      className="mb-6"
+      role="progressbar"
+      aria-valuemin={1}
+      aria-valuemax={steps.length}
+      aria-valuenow={Math.min(current + 1, steps.length)}
+      aria-valuetext={`${label}, step ${Math.min(current + 1, steps.length)} of ${steps.length}`}
+    >
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <p className="small-caps text-sm tracking-[0.2em] text-muted">
+          Night · {Math.min(current + 1, steps.length)} of {steps.length}
+        </p>
+        <p className="truncate text-sm text-muted">
+          {nextStep ? `Next: ${NIGHT_STEP_INFO[nextStep].label}` : "Next: dawn"}
+        </p>
+      </div>
+      <div className="flex gap-1">
+        {steps.map((step, index) => (
+          <span
+            key={step}
+            className={`h-2 flex-1 rounded-full ${
+              index < current
+                ? "bg-gold-deep"
+                : index === current
+                  ? "candle-pulse bg-gold shadow-[0_0_10px_#e0b45c]"
+                  : "bg-[#3a2c20]"
+            }`}
+          />
+        ))}
+      </div>
+      {showCaller ? (
+        <p className="mt-3 text-center font-[family-name:var(--font-display)] text-2xl text-[#f3e6c8]">
+          {label}
+          <span className="text-muted">, wake up…</span>
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -99,10 +184,10 @@ export function HostResetButton({ onReset }: { onReset: () => void }) {
           setArmed(true);
         }
       }}
-      className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-50 min-h-11 rounded-full px-4 text-sm font-semibold shadow-lg ${
+      className={`fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-50 min-h-10 rounded-md px-3 font-[family-name:var(--font-display)] text-sm shadow-[0_6px_16px_#000a] transition-colors duration-150 ${
         armed
-          ? "bg-[#b42318] text-white"
-          : "border border-white/15 bg-black/60 text-foreground backdrop-blur"
+          ? "border border-[#d0604d] bg-[#7a2116] text-[#f6e6d4]"
+          : "border border-line/80 bg-[#120d0a]/75 text-muted backdrop-blur"
       }`}
     >
       {armed ? "Tap again to reset" : "Reset game"}

@@ -1,4 +1,4 @@
-import { MiniRole } from "@/components/cards/RoleCard";
+import { CardBack, MiniRole } from "@/components/cards/RoleCard";
 import { Button, Title } from "@/components/game/ui";
 import {
   CENTER_LABELS,
@@ -25,10 +25,12 @@ export function NightScreen({
     return (
       <>
         <Title kicker="Night">{flash.title}</Title>
-        <p className="mb-4 text-lg">{flash.body}</p>
-        <div className="mb-6 flex flex-wrap gap-2">
+        <p className="mb-5 text-center text-lg">{flash.body}</p>
+        <div className="mb-8 flex flex-wrap justify-center gap-3">
           {flash.roles.map((role, index) => (
-            <MiniRole key={`${role}-${index}`} role={role} />
+            <div key={`${role}-${index}`} className="w-32">
+              <MiniRole role={role} />
+            </div>
           ))}
         </div>
         <Button onClick={onDismissFlash}>Close your eyes</Button>
@@ -39,9 +41,18 @@ export function NightScreen({
   if (!prompt) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="mb-6 h-28 w-28 rounded-full bg-[#d4b46a]/15 shadow-[0_0_80px_#d4b46a55]" />
+        <svg viewBox="0 0 120 120" className="candle-pulse mb-6 h-32 w-32" aria-hidden>
+          <defs>
+            <radialGradient id="eyes-closed-halo">
+              <stop offset="0.45" stopColor="#e9dcc0" stopOpacity="0.25" />
+              <stop offset="1" stopColor="#e9dcc0" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <circle cx="60" cy="60" r="58" fill="url(#eyes-closed-halo)" />
+          <path d="M74 30a32 32 0 1 0 0 60a26 26 0 1 1 0-60Z" fill="#e9dcc0" />
+        </svg>
         <Title kicker="Night">Eyes closed</Title>
-        <p className="text-muted">Stay quiet. Do not look at other phones.</p>
+        <p className="text-lg text-muted">Stay quiet. Your screen will change when it is your turn.</p>
       </div>
     );
   }
@@ -49,7 +60,7 @@ export function NightScreen({
   return (
     <>
       <Title kicker="Night">{prompt.title}</Title>
-      <p className="mb-5 text-base leading-relaxed">{prompt.instruction}</p>
+      <p className="mb-6 text-center text-lg leading-relaxed">{prompt.instruction}</p>
       <NightPromptForm
         key={`${prompt.kind}:${prompt.title}`}
         prompt={prompt}
@@ -81,16 +92,26 @@ function NightPromptForm({
           {prompt.seenPlayerIds.length ? (
             <ul className="space-y-2">
               {prompt.seenPlayerIds.map((id) => (
-                <li key={id} className="rounded-2xl bg-white/5 px-4 py-3">
+                <li key={id} className="rounded-lg border border-line bg-panel/80 px-4 py-3 text-lg">
                   {named(id)}
                 </li>
               ))}
             </ul>
           ) : null}
-          {prompt.seenRoles.map((role, index) => (
-            <MiniRole key={`${role}-${index}`} role={role} />
-          ))}
-          {prompt.ownRole ? <MiniRole role={prompt.ownRole} /> : null}
+          {prompt.seenRoles.length || prompt.ownRole ? (
+            <div className="flex flex-wrap justify-center gap-3">
+              {prompt.seenRoles.map((role, index) => (
+                <div key={`${role}-${index}`} className="w-28">
+                  <MiniRole role={role} />
+                </div>
+              ))}
+              {prompt.ownRole && !prompt.seenRoles.includes(prompt.ownRole) ? (
+                <div className="w-28">
+                  <MiniRole role={prompt.ownRole} caption="You" />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <Button onClick={() => onAction({ kind: "acknowledge" })}>Close your eyes</Button>
         </div>
       );
@@ -128,7 +149,7 @@ function NightPromptForm({
     case "seer":
       return (
         <div className="space-y-4">
-          <p className="text-sm text-muted">Pick one player or two center cards.</p>
+          <p className="text-center text-muted">Pick one player, or two center cards.</p>
           <Chooser
             players={prompt.playerIds.map((id) => ({
               id,
@@ -272,10 +293,11 @@ function Chooser({
           key={player.id}
           type="button"
           onClick={() => onToggle(player.id)}
-          className={`min-h-12 w-full rounded-2xl px-4 text-left ${
+          aria-pressed={selected.includes(player.id)}
+          className={`min-h-13 w-full rounded-lg border px-4 text-left text-lg transition-colors duration-150 ${
             selected.includes(player.id)
-              ? "bg-gold text-black"
-              : "bg-white/5"
+              ? "border-[#f0d89a] bg-gold text-[#1c120a]"
+              : "border-line bg-panel/80"
           }`}
         >
           {player.name}
@@ -305,22 +327,33 @@ function CenterChooser({
   onToggle: (index: number) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {CENTER_LABELS.map((label, index) => (
-        <button
-          key={label}
-          type="button"
-          onClick={() => onToggle(index)}
-          className={`min-h-20 rounded-2xl ${
-            selected.includes(index) ? "bg-gold text-black" : "bg-white/5"
-          }`}
-        >
-          {label}
-          <span className="block text-xs opacity-70">
-            {max === 2 ? "Pick 2" : "Pick 1"}
-          </span>
-        </button>
-      ))}
+    <div>
+      <p className="small-caps mb-2 text-center text-sm tracking-[0.2em] text-muted">
+        Center cards · pick {max}
+      </p>
+      <div className="grid grid-cols-3 gap-3">
+        {CENTER_LABELS.map((label, index) => {
+          const isSelected = selected.includes(index);
+          return (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => onToggle(index)}
+              className={`rounded-xl p-1 transition-transform duration-150 ${
+                isSelected
+                  ? "-translate-y-1.5 ring-2 ring-gold shadow-[0_0_24px_#e0b45c66]"
+                  : ""
+              }`}
+            >
+              <CardBack className="w-full" />
+              <span className="small-caps mt-1 block text-center tracking-[0.15em] text-muted">
+                {label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

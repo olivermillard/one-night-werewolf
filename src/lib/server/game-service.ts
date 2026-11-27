@@ -15,12 +15,17 @@ import {
   type Role,
   ROLES,
 } from "@/lib/game";
-import { applyNightAction, advanceNight } from "@/lib/game/night";
+import {
+  advanceNight,
+  applyNightAction,
+  publicNightSteps,
+} from "@/lib/game/night";
 import { emptyStepDelayMs, tokensMatch } from "@/lib/server/auth";
 import { HttpError } from "@/lib/server/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type {
   GameView,
+  NightProgress,
   PrivateView,
   PublicPlayer,
   PublicRoom,
@@ -395,7 +400,15 @@ function buildView(
     }
   }
 
-  return { room: publicRoom, me: mePublic, private: privateView };
+  let night: NightProgress | null = null;
+  if (secret && room.phase === "night") {
+    const steps = publicNightSteps(secret.state.deck);
+    const step = secret.state.nightStep;
+    const index = step === "complete" ? -1 : steps.indexOf(step);
+    night = { steps, current: index === -1 ? steps.length : index };
+  }
+
+  return { room: publicRoom, me: mePublic, private: privateView, night };
 }
 
 async function savePlayersReady(players: PlayerRow[]): Promise<void> {

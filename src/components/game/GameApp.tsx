@@ -5,7 +5,15 @@ import { DayScreen } from "@/components/game/DayScreen";
 import { LobbyScreen } from "@/components/game/LobbyScreen";
 import { NightScreen } from "@/components/game/NightScreen";
 import { RevealScreen } from "@/components/game/RevealScreen";
-import { ErrorBanner, HostResetButton, Shell } from "@/components/game/ui";
+import { CardBack } from "@/components/cards/RoleCard";
+import {
+  Button,
+  ErrorBanner,
+  HostResetButton,
+  NightProgressBar,
+  Shell,
+  Title,
+} from "@/components/game/ui";
 import { VoteScreen } from "@/components/game/VoteScreen";
 import { createRoom, fetchView, joinRoom, sendCommand } from "@/lib/client/api";
 import type { Command } from "@/lib/commands";
@@ -177,7 +185,7 @@ export function GameApp({ code }: { code?: string }) {
     return (
       <Shell>
         <ErrorBanner message={error} />
-        <p className="text-muted">Loading the table…</p>
+        <p className="mt-20 text-center text-lg text-muted">Lighting the candles…</p>
       </Shell>
     );
   }
@@ -185,12 +193,12 @@ export function GameApp({ code }: { code?: string }) {
   if (!session || !view) {
     return (
       <Shell>
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Bezier night, digital table</p>
-        <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl">
-          One Night Ultimate Werewolf
-        </h1>
-        <p className="mt-3 mb-6 text-muted">
-          Each player uses their own phone. Cards stay secret unless the rules let you see them.
+        <div className="mx-auto mb-6 w-28 -rotate-3">
+          <CardBack className="w-full drop-shadow-[0_16px_30px_#000c]" />
+        </div>
+        <Title kicker="A game for one night">One Night Ultimate Werewolf</Title>
+        <p className="-mt-2 mb-8 text-center text-lg leading-relaxed text-muted">
+          Gather your village. Each player uses their own phone, and every card stays secret until dawn.
         </p>
         <ErrorBanner message={error} />
         <form
@@ -206,7 +214,8 @@ export function GameApp({ code }: { code?: string }) {
             onChange={(event) => setName(event.target.value)}
             placeholder="Your name"
             autoComplete="nickname"
-            className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4"
+            aria-label="Your name"
+            className="min-h-13 w-full rounded-lg border border-line bg-panel/80 px-4 text-lg placeholder:text-muted/70 focus:border-gold focus:outline-none"
             maxLength={24}
             required
           />
@@ -215,29 +224,27 @@ export function GameApp({ code }: { code?: string }) {
               value={joinCode}
               onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
               placeholder="Room code (to join)"
-              className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 uppercase tracking-[0.3em]"
+              aria-label="Room code"
+              className="min-h-13 w-full rounded-lg border border-line bg-panel/80 px-4 text-lg uppercase tracking-[0.3em] placeholder:normal-case placeholder:tracking-normal placeholder:text-muted/70 focus:border-gold focus:outline-none"
               maxLength={6}
             />
           ) : (
-            <p className="text-sm text-muted">Joining room {code.toUpperCase()}</p>
+            <p className="text-center text-muted">Joining room {code.toUpperCase()}</p>
           )}
-          <button
-            type="submit"
-            disabled={busy || name.trim().length < 1}
-            className="min-h-12 w-full rounded-2xl bg-gold text-base font-semibold text-black disabled:opacity-40"
-          >
-            {code || joinCode ? "Join room" : "Create room"}
-          </button>
+          <Button type="submit" disabled={busy || name.trim().length < 1}>
+            {code || joinCode ? "Join the village" : "Found a new village"}
+          </Button>
         </form>
-        {!code ? (
-          <button
-            type="button"
-            disabled={busy || name.trim().length < 1}
-            onClick={() => void handleCreate()}
-            className="mt-3 min-h-12 w-full rounded-2xl border border-white/15 text-base"
-          >
-            Create a new room
-          </button>
+        {!code && joinCode ? (
+          <div className="mt-3">
+            <Button
+              variant="ghost"
+              disabled={busy || name.trim().length < 1}
+              onClick={() => void handleCreate()}
+            >
+              Found a new village instead
+            </Button>
+          </div>
         ) : null}
       </Shell>
     );
@@ -321,11 +328,19 @@ function PhaseView({
       );
     case "night":
       return (
-        <NightScreen
-          view={view}
-          onAction={onAction}
-          onDismissFlash={onDismissFlash}
-        />
+        <>
+          {view.night ? (
+            <NightProgressBar
+              progress={view.night}
+              showCaller={!view.private.prompt && !view.private.flash}
+            />
+          ) : null}
+          <NightScreen
+            view={view}
+            onAction={onAction}
+            onDismissFlash={onDismissFlash}
+          />
+        </>
       );
     case "day":
       return <DayScreen view={view} onStartVote={onStartVote} />;

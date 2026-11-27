@@ -29,7 +29,7 @@ export function VoteScreen({
   return (
     <>
       <Title kicker="Vote">Point at up to two players</Title>
-      <p className="mb-4 text-sm text-muted">
+      <p className="mb-5 text-center text-muted">
         {view.private.voteCount}/{view.private.playerCount} votes in. Votes stay hidden until everyone has voted.
       </p>
       <div className="space-y-2">
@@ -40,8 +40,10 @@ export function VoteScreen({
             disabled={voted}
             aria-pressed={selected.includes(player.id)}
             onClick={() => toggle(player.id)}
-            className={`min-h-14 w-full rounded-2xl px-4 text-left text-lg ${
-              selected.includes(player.id) ? "bg-gold text-black" : "bg-white/5"
+            className={`min-h-14 w-full rounded-lg border px-4 text-left text-xl transition-colors duration-150 ${
+              selected.includes(player.id)
+                ? "border-[#f0d89a] bg-gold text-[#1c120a]"
+                : "border-line bg-panel/80"
             }`}
           >
             {player.name}

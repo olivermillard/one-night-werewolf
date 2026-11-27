@@ -1,21 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #07080f;
-  --foreground: #f4efe4;
-  --panel: #12141c;
-  --gold: #d4b46a;
-  --muted: #9a917f;
+  /* Candlelit night: ink, leather, parchment, gold leaf, blood red. */
+  --background: #120d0a;
+  --foreground: #ece0c4;
+  --panel: #1e1611;
+  --panel-raised: #2b2018;
+  --gold: #d4a85a;
+  --gold-deep: #a87a32;
+  --muted: #a8977a;
+  --blood: #8e2a1e;
+  --line: #5a4630;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-panel: var(--panel);
+  --color-panel-raised: var(--panel-raised);
   --color-gold: var(--gold);
+  --color-gold-deep: var(--gold-deep);
   --color-muted: var(--muted);
-  --font-sans: var(--font-source-sans);
-  --font-display: var(--font-cinzel);
+  --color-blood: var(--blood);
+  --color-line: var(--line);
+  --font-sans: var(--font-garamond);
+  --font-display: var(--font-fell);
 }
 
 html {
@@ -27,11 +36,13 @@ body {
   min-height: 100dvh;
   min-height: 100svh;
   background:
-    radial-gradient(1200px 600px at 50% -10%, #1b1630 0%, transparent 55%),
-    radial-gradient(800px 400px at 100% 100%, #1a0f14 0%, transparent 50%),
+    radial-gradient(900px 520px at 50% -8%, #4a2c14aa 0%, transparent 60%),
+    radial-gradient(700px 500px at 50% 115%, #2a0f0a 0%, transparent 60%),
     var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans), "Iowan Old Style", Georgia, serif;
+  font-size: 17px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button,
@@ -47,18 +58,50 @@ textarea {
   font-size: 16px;
 }
 
-.starfield {
-  background-image:
-    radial-gradient(#fff6 1px, transparent 1px),
-    radial-gradient(#fff3 1px, transparent 1px);
-  background-size: 48px 48px, 84px 84px;
-  background-position: 0 0, 24px 36px;
+/* Fine paper grain and a dark vignette — no dot grids. */
+.tavern {
+  position: relative;
+  isolation: isolate;
+}
+
+.tavern::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.9 0 0 0 0 0.8 0 0 0 0 0.6 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.tavern::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 40%, transparent 45%, #000a 100%);
+}
+
+/* Gold-leaf double rule used on panels and cards. */
+.gilded {
+  border: 1px solid var(--gold-deep);
+  box-shadow:
+    inset 0 0 0 3px var(--panel),
+    inset 0 0 0 4px #d4a85a55,
+    0 18px 40px #0009;
+}
+
+.small-caps {
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
 }
 
 .card-flip {
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
-  transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .card-flip.is-flipped {
@@ -72,4 +115,29 @@ textarea {
 
 .card-back {
   transform: rotateY(180deg);
+}
+
+@keyframes candle {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+.candle-pulse {
+  animation: candle 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-flip {
+    transition: none;
+  }
+  .candle-pulse {
+    animation: none;
+  }
 }

@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Cinzel, Source_Sans_3 } from "next/font/google";
+import { EB_Garamond, IM_Fell_English_SC } from "next/font/google";
 import "./globals.css";
 
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
+const fell = IM_Fell_English_SC({
+  variable: "--font-fell",
   subsets: ["latin"],
-  weight: ["500", "700"],
+  weight: "400",
 });
 
-const sourceSans = Source_Sans_3({
-  variable: "--font-source-sans",
+const garamond = EB_Garamond({
+  variable: "--font-garamond",
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#07080f",
+  themeColor: "#120d0a",
   viewportFit: "cover",
 };
 
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${cinzel.variable} ${sourceSans.variable} h-full antialiased`}
+      className={`${fell.variable} ${garamond.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

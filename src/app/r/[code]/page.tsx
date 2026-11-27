@@ -16,7 +16,7 @@ export default function RoomPage({
   params: Promise<{ code: string }>;
 }) {
   return (
-    <main className="starfield flex-1">
+    <main className="tavern flex-1">
       <Suspense
         fallback={
           <p className="px-4 py-10 text-muted">Opening the room…</p>
