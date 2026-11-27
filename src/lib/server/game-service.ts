@@ -463,7 +463,34 @@ export async function getView(args: {
   return buildView(room, loaded.players, secret, me);
 }
 
+class VersionConflict extends Error {}
+
+const COMMAND_ATTEMPTS = 5;
+
 export async function runCommand(args: {
+  code: string;
+  playerId: string;
+  token: string;
+  command: Command;
+}): Promise<GameView> {
+  // Another request may bump the room between our read and write. Re-run the
+  // command against fresh state instead of silently dropping it.
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await runCommandOnce(args);
+    } catch (error) {
+      if (!(error instanceof VersionConflict)) throw error;
+      if (attempt >= COMMAND_ATTEMPTS) {
+        throw new HttpError(409, "The table is busy. Please try again.");
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, 20 + Math.random() * 60 * attempt),
+      );
+    }
+  }
+}
+
+async function runCommandOnce(args: {
   code: string;
   playerId: string;
   token: string;
@@ -542,12 +569,16 @@ export async function runCommand(args: {
     }
     case "ready": {
       if (room.phase !== "deal") {
+        // Late or retried "ready" after the night already began is harmless.
+        if (room.phase !== "lobby") break;
         throw new HttpError(400, "You can only ready up after cards are dealt.");
       }
       players = players.map((player) =>
         player.id === me.id ? { ...player, ready: true } : player,
       );
-      await savePlayersReady(players);
+      // Only write this player's flag: writing everyone's from this snapshot
+      // could overwrite another player who readied up concurrently.
+      await savePlayersReady(players.filter((player) => player.id === me.id));
       bump = true;
       if (players.every((player) => player.ready) && secret) {
         const started = beginDealtNight(room, secret.state, now);
@@ -708,12 +739,12 @@ export async function runCommand(args: {
       });
     } catch (error) {
       if (!(error instanceof HttpError) || error.status !== 409) throw error;
-      const latest = await loadRoom(args.code);
-      return buildView(latest.room, latest.players, latest.secret, {
-        ...me,
-        ready:
-          latest.players.find((player) => player.id === me.id)?.ready ?? me.ready,
-      });
+      if (command.type === "tick") {
+        // A tick only advances clocks; whoever won the race already did that.
+        const latest = await loadRoom(args.code);
+        return buildView(latest.room, latest.players, latest.secret, me);
+      }
+      throw new VersionConflict();
     }
   }
 

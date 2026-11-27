@@ -51,6 +51,7 @@ export function NightScreen({
       <Title kicker="Night">{prompt.title}</Title>
       <p className="mb-5 text-base leading-relaxed">{prompt.instruction}</p>
       <NightPromptForm
+        key={`${prompt.kind}:${prompt.title}`}
         prompt={prompt}
         players={view.room.players}
         onAction={onAction}

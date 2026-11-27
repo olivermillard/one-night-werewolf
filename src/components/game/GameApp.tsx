@@ -52,7 +52,10 @@ export function GameApp({ code }: { code?: string }) {
       .catch((err: unknown) => {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Could not load game.");
-        if (err instanceof Error && /session|Unknown player/i.test(err.message)) {
+        if (
+          err instanceof Error &&
+          /session|Unknown player|Room not found|not in this room/i.test(err.message)
+        ) {
           clearSession();
           setView(null);
         }
