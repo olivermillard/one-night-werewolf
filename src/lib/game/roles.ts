@@ -42,7 +42,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: 2,
     blurb: "Find your partner. Survive the vote.",
     rules:
-      "At night, all Werewolves open their eyes and look for other Werewolves. If no one else opens their eyes, the other Werewolves are in the center. Werewolves are on the werewolf team. Lone Wolf: if there is only one Werewolf, that Werewolf may view one center card. The village wins only if every Werewolf among the players dies.",
+      "At night, all Werewolves open their eyes and look for other Werewolves. If no one else opens their eyes, the other Werewolves are in the center. Werewolves are on the werewolf team. Lone Wolf: if there is only one Werewolf, that Werewolf may view one center card.",
     accent: "#b42318",
     accentSoft: "#3a1010",
   },
@@ -152,7 +152,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: null,
     blurb: "You win only if you die.",
     rules:
-      "The Tanner hates this job so much that they want to die. The Tanner only wins if they die. If the Tanner dies, the Werewolves do not win. If the Tanner dies and every Werewolf also dies, the village team wins too. The Tanner is considered a member of the village (but is not on their team), so if the Tanner dies when all Werewolves are in the center, the village team loses. The Tanner is not on the werewolf or the villager team.",
+      "The Tanner hates this job so much that they want to die. The Tanner only wins if they die. If the Tanner dies, the Werewolves do not win. If the Tanner dies and the village also kills enough Werewolves to win, the village team wins too. The Tanner is considered a member of the village (but is not on their team), so if the Tanner dies when all Werewolves are in the center, the village team loses. The Tanner is not on the werewolf or the villager team.",
     accent: "#a8a29e",
     accentSoft: "#1c1917",
   },

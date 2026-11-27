@@ -1,5 +1,13 @@
 import { clonePositions } from "./positions";
-import type { CardPositions, GameState, Player, PlayerId, Role } from "./types";
+import {
+  DEFAULT_HOUSE_RULES,
+  type CardPositions,
+  type GameState,
+  type HouseRules,
+  type Player,
+  type PlayerId,
+  type Role,
+} from "./types";
 
 export type Rng = () => number;
 
@@ -45,6 +53,7 @@ export function createDealtState(
   players: Player[],
   deck: Role[],
   rng: Rng = Math.random,
+  houseRules: HouseRules = DEFAULT_HOUSE_RULES,
 ): GameState {
   const original = deal(
     deck,
@@ -65,5 +74,6 @@ export function createDealtState(
     votes: {},
     deaths: [],
     winners: null,
+    houseRules: { ...houseRules },
   };
 }

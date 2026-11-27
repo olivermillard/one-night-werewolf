@@ -1,6 +1,7 @@
 import type { CalledNightStep } from "@/lib/game/night";
 import type {
   FlashReveal,
+  HouseRules,
   NightLogEntry,
   NightPrompt,
   Phase,
@@ -26,6 +27,7 @@ export interface PublicRoom {
   dayEndsAt: string | null;
   hostPlayerId: string | null;
   round: number;
+  houseRules: HouseRules;
 }
 
 export interface RevealPayload {
@@ -39,6 +41,7 @@ export interface RevealPayload {
   finalCenter: Role[];
   doppelgangerCopy: Role | null;
   nightLog: NightLogEntry[];
+  houseRules: HouseRules;
 }
 
 export interface PrivateView {

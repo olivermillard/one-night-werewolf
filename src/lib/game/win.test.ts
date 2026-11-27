@@ -271,3 +271,62 @@ describe("every werewolf must die (house rule)", () => {
     expect(result).toMatchObject({ village: true, werewolf: false, tanner: true });
   });
 });
+
+describe("official rule (house rule off)", () => {
+  const P4 = playersOf("Alice", "Bob", "Cara", "Drew");
+  const twoWolves = assignedState({
+    players: P4,
+    playerRoles: {
+      alice: "werewolf",
+      bob: "werewolf",
+      cara: "seer",
+      drew: "tanner",
+    },
+    center: ["villager", "robber", "troublemaker"],
+  }).current;
+  const official = { allWerewolvesMustDie: false };
+
+  it("village wins if just one of two werewolves dies", () => {
+    const result = resolveWins({
+      players: P4,
+      current: twoWolves,
+      doppelgangerCopy: null,
+      deaths: ["alice"],
+      houseRules: official,
+    });
+    expect(result).toMatchObject({ village: true, werewolf: false });
+    expect(result.reasons).toContain("At least one Werewolf died, so the village team wins.");
+  });
+
+  it("tanner and village both win if the tanner and one werewolf die", () => {
+    const result = resolveWins({
+      players: P4,
+      current: twoWolves,
+      doppelgangerCopy: null,
+      deaths: ["alice", "drew"],
+      houseRules: official,
+    });
+    expect(result).toMatchObject({ village: true, werewolf: false, tanner: true });
+  });
+
+  it("werewolves win if none of them die", () => {
+    const result = resolveWins({
+      players: P4,
+      current: twoWolves,
+      doppelgangerCopy: null,
+      deaths: ["cara"],
+      houseRules: official,
+    });
+    expect(result).toMatchObject({ village: false, werewolf: true });
+  });
+
+  it("the house rule is on by default for games saved without the setting", () => {
+    const result = resolveWins({
+      players: P4,
+      current: twoWolves,
+      doppelgangerCopy: null,
+      deaths: ["alice"],
+    });
+    expect(result).toMatchObject({ village: false, werewolf: true });
+  });
+});

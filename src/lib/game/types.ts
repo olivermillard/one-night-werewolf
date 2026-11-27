@@ -115,6 +115,16 @@ export interface WinResult {
   reasons: string[];
 }
 
+export interface HouseRules {
+  /**
+   * Village wins only if every Werewolf held by a player dies. Official rules
+   * need just one Werewolf to die.
+   */
+  allWerewolvesMustDie: boolean;
+}
+
+export const DEFAULT_HOUSE_RULES: HouseRules = { allWerewolvesMustDie: true };
+
 export interface GameState {
   players: Player[];
   deck: Role[];
@@ -129,6 +139,8 @@ export interface GameState {
   votes: Record<PlayerId, PlayerId[]>;
   deaths: PlayerId[];
   winners: WinResult | null;
+  /** Fixed when the cards are dealt. Missing in games saved before it existed. */
+  houseRules?: HouseRules;
 }
 
 export function assertNever(value: never): never {

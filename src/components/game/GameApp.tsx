@@ -2,7 +2,7 @@
 
 import { DealScreen } from "@/components/game/DealScreen";
 import { DayScreen } from "@/components/game/DayScreen";
-import { LobbyScreen } from "@/components/game/LobbyScreen";
+import { LobbyScreen, type LobbySettings } from "@/components/game/LobbyScreen";
 import { NightScreen } from "@/components/game/NightScreen";
 import { RevealScreen } from "@/components/game/RevealScreen";
 import { CardBack } from "@/components/cards/RoleCard";
@@ -17,7 +17,7 @@ import {
 import { VoteScreen } from "@/components/game/VoteScreen";
 import { createRoom, fetchView, joinRoom, sendCommand } from "@/lib/client/api";
 import type { Command } from "@/lib/commands";
-import { assertNever, type NightAction, type Phase, type Role } from "@/lib/game";
+import { assertNever, type NightAction, type Phase } from "@/lib/game";
 import { clearSession, loadSession, saveSession, subscribeSession } from "@/lib/session";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import type { GameView, SessionPayload } from "@/lib/view";
@@ -256,12 +256,12 @@ export function GameApp({ code }: { code?: string }) {
       <PhaseView
         view={view}
         shareUrl={shareUrl}
-        onSettings={(deck, dayTimerSeconds) =>
-          void act({ type: "settings", deck, dayTimerSeconds }).catch(() => undefined)
+        onSettings={(settings) =>
+          void act({ type: "settings", ...settings }).catch(() => undefined)
         }
-        onStart={(deck, dayTimerSeconds) => {
+        onStart={(settings) => {
           void (async () => {
-            await act({ type: "settings", deck, dayTimerSeconds });
+            await act({ type: "settings", ...settings });
             await act({ type: "start" });
           })().catch(() => undefined);
         }}
@@ -299,8 +299,8 @@ function PhaseView({
 }: {
   view: GameView;
   shareUrl: string;
-  onSettings: (deck: Role[], dayTimerSeconds: number) => void;
-  onStart: (deck: Role[], dayTimerSeconds: number) => void;
+  onSettings: (settings: LobbySettings) => void;
+  onStart: (settings: LobbySettings) => void;
   onKick: (playerId: string) => void;
   onReady: () => void;
   onBeginNight: () => void;

@@ -49,6 +49,11 @@ export function RevealScreen({
             {reason}
           </p>
         ))}
+        <p className="small-caps mt-3 text-sm tracking-[0.15em] text-muted">
+          {reveal.houseRules.allWerewolvesMustDie
+            ? "House rule: every Werewolf had to die"
+            : "Official rule: one dead Werewolf was enough"}
+        </p>
       </Panel>
 
       <SectionHeading>The fallen</SectionHeading>

@@ -11,6 +11,12 @@ import {
   type Role,
 } from "@/lib/game";
 import type { GameView } from "@/lib/view";
+
+export interface LobbySettings {
+  deck: Role[];
+  dayTimerSeconds: number;
+  allWerewolvesMustDie: boolean;
+}
 import { useMemo, useState } from "react";
 
 export function LobbyScreen({
@@ -22,12 +28,19 @@ export function LobbyScreen({
 }: {
   view: GameView;
   shareUrl: string;
-  onSettings: (deck: Role[], dayTimerSeconds: number) => void;
-  onStart: (deck: Role[], dayTimerSeconds: number) => void;
+  onSettings: (settings: LobbySettings) => void;
+  onStart: (settings: LobbySettings) => void;
   onKick: (playerId: string) => void;
 }) {
   const [deck, setDeck] = useState<Role[]>(view.room.deck);
   const [timer, setTimer] = useState(view.room.dayTimerSeconds);
+  const allWolves = view.room.houseRules.allWerewolvesMustDie;
+  const settings = (overrides: Partial<LobbySettings> = {}): LobbySettings => ({
+    deck,
+    dayTimerSeconds: timer,
+    allWerewolvesMustDie: allWolves,
+    ...overrides,
+  });
   const [copied, setCopied] = useState(false);
   const playerCount = view.room.players.length;
   const needed = requiredCardCount(Math.max(playerCount, 3));
@@ -47,7 +60,7 @@ export function LobbyScreen({
   function applyPreset() {
     const next = recommendedDeck(Math.max(playerCount, 3));
     setDeck(next);
-    onSettings(next, timer);
+    onSettings(settings({ deck: next }));
   }
 
   async function copyLink() {
@@ -148,6 +161,44 @@ export function LobbyScreen({
         })}
       </div>
 
+      <SectionHeading>House rules</SectionHeading>
+      <Panel>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="font-[family-name:var(--font-display)] text-xl text-[#f3e6c8]">
+              Every Werewolf must die
+            </p>
+            <p className="mt-1 leading-snug text-muted">
+              {allWolves
+                ? "The village wins only if every Werewolf held by a player dies."
+                : "Official rule: the village wins if at least one Werewolf dies."}
+            </p>
+          </div>
+          {view.me.isHost ? (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={allWolves}
+              aria-label="Every Werewolf must die"
+              onClick={() => onSettings(settings({ allWerewolvesMustDie: !allWolves }))}
+              className={`relative mt-1 h-8 w-14 shrink-0 rounded-full border transition-colors duration-200 ${
+                allWolves ? "border-[#f0d89a] bg-gold-deep" : "border-line bg-[#120d0a]"
+              }`}
+            >
+              <span
+                className={`absolute top-1 left-1 h-[1.375rem] w-[1.375rem] rounded-full shadow transition-transform duration-200 ${
+                  allWolves ? "translate-x-6 bg-[#f3e6c8]" : "translate-x-0 bg-muted"
+                }`}
+              />
+            </button>
+          ) : (
+            <span className="small-caps mt-1 shrink-0 tracking-[0.15em] text-gold">
+              {allWolves ? "On" : "Off"}
+            </span>
+          )}
+        </div>
+      </Panel>
+
       {view.me.isHost ? (
         <section className="mt-8 space-y-4">
           <label className="block">
@@ -164,7 +215,7 @@ export function LobbyScreen({
               className="mt-2 w-full accent-[#d4a85a]"
             />
           </label>
-          <Button onClick={() => onSettings(deck, timer)} variant="ghost">
+          <Button onClick={() => onSettings(settings())} variant="ghost">
             Save setup
           </Button>
           {errors.map((error) => (
@@ -173,7 +224,7 @@ export function LobbyScreen({
             </p>
           ))}
           <Button
-            onClick={() => onStart(deck, timer)}
+            onClick={() => onStart(settings())}
             disabled={playerCount < 3 || errors.length > 0}
           >
             Deal the cards

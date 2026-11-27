@@ -33,6 +33,11 @@ export function DayScreen({
       <p className="mb-6 text-center font-[family-name:var(--font-display)] text-7xl tabular-nums text-gold [text-shadow:0_0_30px_#a87a3266]">
         {minutes}:{seconds}
       </p>
+      {view.room.houseRules.allWerewolvesMustDie ? (
+        <p className="small-caps mb-4 text-center text-sm tracking-[0.15em] text-gold">
+          House rule: every Werewolf must die
+        </p>
+      ) : null}
       <p className="mb-4 text-center text-lg text-muted">
         Your card stays face down until the reveal. It may have been swapped in the night.
       </p>

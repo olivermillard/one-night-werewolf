@@ -15,6 +15,7 @@ import {
   type Player,
   type Role,
   ROLES,
+  DEFAULT_HOUSE_RULES,
 } from "@/lib/game";
 import {
   advanceNight,
@@ -43,6 +44,7 @@ export interface RoomRow {
   day_ends_at: string | null;
   view_version: number;
   round: number;
+  all_werewolves_must_die: boolean;
 }
 
 export interface PlayerRow {
@@ -92,6 +94,8 @@ function mapRoom(row: Record<string, unknown>): RoomRow {
     day_ends_at: row.day_ends_at ? String(row.day_ends_at) : null,
     view_version: Number(row.view_version ?? 0),
     round: Number(row.round ?? 0),
+    // Defaults to on (and copes with databases that predate the column).
+    all_werewolves_must_die: row.all_werewolves_must_die !== false,
   };
 }
 
@@ -135,9 +139,7 @@ async function loadRoom(code: string): Promise<{
   const db = supabaseAdmin();
   const { data: roomData, error: roomError } = await db
     .from("rooms")
-    .select(
-      "id, code, phase, host_player_id, deck, day_timer_seconds, day_ends_at, view_version, round",
-    )
+    .select("*")
     .eq("code", code.toUpperCase())
     .maybeSingle();
   if (roomError) throw new HttpError(500, roomError.message);
@@ -267,6 +269,7 @@ function applyClock(
         current: nextSecret.state.current,
         doppelgangerCopy: nextSecret.state.doppelgangerCopy,
         votes: nextSecret.state.votes,
+        houseRules: nextSecret.state.houseRules,
       });
       nextSecret = {
         ...nextSecret,
@@ -294,24 +297,36 @@ async function persist(args: {
   const viewVersion = args.bump
     ? args.previous.view_version + 1
     : args.previous.view_version;
+  const update: Record<string, unknown> = {
+    phase: args.room.phase,
+    host_player_id: args.room.host_player_id,
+    deck: args.room.deck,
+    day_timer_seconds: args.room.day_timer_seconds,
+    day_ends_at: args.room.day_ends_at,
+    view_version: viewVersion,
+    round: args.room.round,
+  };
+  // Only written when changed, so rooms keep working on a database that
+  // hasn't had migration 0002 applied yet.
+  if (args.room.all_werewolves_must_die !== args.previous.all_werewolves_must_die) {
+    update.all_werewolves_must_die = args.room.all_werewolves_must_die;
+  }
   const { data, error } = await db
     .from("rooms")
-    .update({
-      phase: args.room.phase,
-      host_player_id: args.room.host_player_id,
-      deck: args.room.deck,
-      day_timer_seconds: args.room.day_timer_seconds,
-      day_ends_at: args.room.day_ends_at,
-      view_version: viewVersion,
-      round: args.room.round,
-    })
+    .update(update)
     .eq("id", args.previous.id)
     .eq("view_version", args.previous.view_version)
-    .select(
-      "id, code, phase, host_player_id, deck, day_timer_seconds, day_ends_at, view_version, round",
-    )
+    .select("*")
     .maybeSingle();
-  if (error) throw new HttpError(500, error.message);
+  if (error) {
+    if (/all_werewolves_must_die/.test(error.message)) {
+      throw new HttpError(
+        503,
+        "House rules need a database update (migration 0002) before they can be changed.",
+      );
+    }
+    throw new HttpError(500, error.message);
+  }
   if (!data) throw new HttpError(409, "Room was updated. Retry.");
   if (args.secret) {
     const { error: secretError } = await db.from("game_secrets").upsert({
@@ -330,6 +345,7 @@ function buildReveal(state: GameState): RevealPayload {
     current: state.current,
     doppelgangerCopy: state.doppelgangerCopy,
     votes: state.votes,
+    houseRules: state.houseRules,
   });
   return {
     votes: state.votes,
@@ -342,6 +358,7 @@ function buildReveal(state: GameState): RevealPayload {
     finalCenter: [...state.current.center],
     doppelgangerCopy: state.doppelgangerCopy,
     nightLog: state.nightLog,
+    houseRules: state.houseRules ?? DEFAULT_HOUSE_RULES,
   };
 }
 
@@ -362,6 +379,7 @@ function buildView(
     dayEndsAt: room.day_ends_at,
     hostPlayerId: room.host_player_id,
     round: room.round,
+    houseRules: { allWerewolvesMustDie: room.all_werewolves_must_die },
   };
   const mePublic: PublicPlayer = {
     id: me.id,
@@ -552,6 +570,10 @@ async function runCommandOnce(args: {
         ...room,
         deck: command.deck,
         day_timer_seconds: command.dayTimerSeconds,
+        all_werewolves_must_die:
+          typeof command.allWerewolvesMustDie === "boolean"
+            ? command.allWerewolvesMustDie
+            : room.all_werewolves_must_die,
       };
       bump = true;
       break;
@@ -573,7 +595,9 @@ async function runCommandOnce(args: {
           : recommendedDeck(players.length);
       const errors = hardValidateDeck(deck, players.length);
       if (errors.length) throw new HttpError(400, errors[0] ?? "Invalid deck.");
-      const dealt = createDealtState(toEnginePlayers(players), deck);
+      const dealt = createDealtState(toEnginePlayers(players), deck, Math.random, {
+        allWerewolvesMustDie: room.all_werewolves_must_die,
+      });
       players = players.map((player) => ({ ...player, ready: false }));
       await savePlayersReady(players);
       room = {
@@ -697,6 +721,7 @@ async function runCommandOnce(args: {
           current: secret.state.current,
           doppelgangerCopy: secret.state.doppelgangerCopy,
           votes,
+          houseRules: secret.state.houseRules,
         });
         secret = {
           ...secret,

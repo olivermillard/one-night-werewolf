@@ -1,7 +1,12 @@
 import type { NightAction, Role } from "@/lib/game";
 
 export type Command =
-  | { type: "settings"; deck: Role[]; dayTimerSeconds: number }
+  | {
+      type: "settings";
+      deck: Role[];
+      dayTimerSeconds: number;
+      allWerewolvesMustDie?: boolean;
+    }
   | { type: "start" }
   | { type: "ready" }
   | { type: "begin-night" }

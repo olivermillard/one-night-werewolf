@@ -1,6 +1,7 @@
 import { roleAtEnd } from "./win";
 import type {
   CardPositions,
+  HouseRules,
   Player,
   PlayerId,
   Role,
@@ -114,6 +115,7 @@ export function resolveVotes(args: {
   current: CardPositions;
   doppelgangerCopy: Role | null;
   votes: Votes;
+  houseRules?: HouseRules;
 }): VoteResolution {
   const tally = tallyVotes(args.players, args.votes);
   const votedDown = initialDeathsFromVotes(args.players, args.votes);
@@ -126,6 +128,7 @@ export function resolveVotes(args: {
     current: args.current,
     doppelgangerCopy: args.doppelgangerCopy,
     deaths,
+    houseRules: args.houseRules,
   });
   return { tally, deaths, winners };
 }
