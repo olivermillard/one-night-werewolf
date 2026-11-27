@@ -42,13 +42,11 @@ export function NightScreen({
   if (!prompt) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="relative mb-6 h-32 w-32">
-          <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,#e9dcc040_35%,transparent_70%)] blur-md" />
-          <Moon
-            lit={view.night ? moonForStep(view.night.current, view.night.steps.length) : 0.5}
-            className="candle-pulse relative h-full w-full"
-          />
-        </div>
+        <Moon
+          lit={view.night ? moonForStep(view.night.current, view.night.steps.length) : 0.5}
+          glow
+          className="candle-pulse mb-6 h-32 w-32"
+        />
         <Title kicker="Night">Eyes closed</Title>
         <p className="text-lg text-muted">Stay quiet. Your screen will change when it is your turn.</p>
       </div>
