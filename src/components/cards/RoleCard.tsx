@@ -57,11 +57,14 @@ export function CardFace({
   role,
   className = "",
   small = false,
+  bare = false,
 }: {
   role: Role;
   className?: string;
   /** Tiny thumbnails: shorter banner, name only. */
   small?: boolean;
+  /** Art only, no name banner (when the name is printed next to it). */
+  bare?: boolean;
 }) {
   const info = ROLE_INFO[role];
   const uid = useId().replace(/:/g, "");
@@ -72,6 +75,7 @@ export function CardFace({
       <RoleArt role={role} uid={`${uid}-${role}`} className="absolute inset-0 h-full w-full" />
       <div className="pointer-events-none absolute inset-[5px] rounded-[0.85rem] border border-[#d4a85a66]" />
       <div
+        hidden={bare}
         className={`absolute inset-x-0 bottom-0 bg-[linear-gradient(0deg,#120d0af2_50%,transparent)] text-center ${
           small ? "px-1 pb-1.5 pt-5" : "px-3 pb-3 pt-10"
         }`}
@@ -135,10 +139,12 @@ export function MiniRole({
   role,
   size = "md",
   caption,
+  bare = false,
 }: {
   role: Role;
   size?: "sm" | "md";
   caption?: string;
+  bare?: boolean;
 }) {
   return (
     <figure className={`mx-auto w-full ${size === "sm" ? "max-w-[5.5rem]" : "max-w-[8rem]"} [container-type:inline-size]`}>
@@ -147,7 +153,7 @@ export function MiniRole({
           {caption}
         </figcaption>
       ) : null}
-      <CardFace role={role} small={size === "sm"} className="rounded-lg border" />
+      <CardFace role={role} small={size === "sm"} bare={bare} className="rounded-lg border" />
     </figure>
   );
 }

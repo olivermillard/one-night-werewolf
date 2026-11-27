@@ -1,5 +1,6 @@
 "use client";
 
+import { Moon, moonForStep } from "@/components/game/Moon";
 import { NIGHT_STEP_INFO } from "@/lib/game";
 import type { NightProgress } from "@/lib/view";
 import { useEffect, useState, type ReactNode } from "react";
@@ -138,16 +139,16 @@ export function NightProgressBar({
           {nextStep ? `Next: ${NIGHT_STEP_INFO[nextStep].label}` : "Next: dawn"}
         </p>
       </div>
-      <div className="flex gap-1">
+      {/* One moon per role called, waxing from crescent to full by dawn. */}
+      <div className="flex items-center justify-between gap-1">
         {steps.map((step, index) => (
-          <span
+          <Moon
             key={step}
-            className={`h-2 flex-1 rounded-full ${
-              index < current
-                ? "bg-gold-deep"
-                : index === current
-                  ? "candle-pulse bg-gold shadow-[0_0_10px_#e0b45c]"
-                  : "bg-[#3a2c20]"
+            lit={moonForStep(index, steps.length)}
+            dim={index > current}
+            glow={index === current}
+            className={`aspect-square min-w-0 flex-1 transition-transform duration-300 ${
+              index === current ? "candle-pulse max-w-9 scale-110" : "max-w-7"
             }`}
           />
         ))}

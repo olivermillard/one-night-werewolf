@@ -1,14 +1,7 @@
 import { MiniRole } from "@/components/cards/RoleCard";
-import { CardsInPlay, deckInWakeOrder } from "@/components/game/CardsInPlay";
+import { NightTimeline } from "@/components/game/NightTimeline";
 import { Button, Panel, SectionHeading, Title } from "@/components/game/ui";
-import {
-  CENTER_LABELS,
-  NIGHT_STEP_INFO,
-  ROLE_INFO,
-  displayName,
-  effectiveRole,
-  publicNightSteps,
-} from "@/lib/game";
+import { CENTER_LABELS, displayName, effectiveRole } from "@/lib/game";
 import type { GameView } from "@/lib/view";
 
 export function RevealScreen({
@@ -33,11 +26,6 @@ export function RevealScreen({
   const nameOf = (id: string) =>
     view.room.players.find((player) => player.id === id)?.name ?? id;
   const deck = view.room.deck;
-  const steps = publicNightSteps(deck);
-  const nonWaking = deckInWakeOrder(deck).filter(
-    (role) => ROLE_INFO[role].nightOrder === null,
-  );
-
   return (
     <>
       <Title kicker="Dawn breaks">
@@ -73,49 +61,11 @@ export function RevealScreen({
         <p className="text-center text-muted">Nobody died.</p>
       )}
 
-      <SectionHeading>Cards in play</SectionHeading>
-      <p className="mb-3 text-center text-sm text-muted">
-        In the order they were called at night
-      </p>
-      <CardsInPlay deck={deck} />
-
       <SectionHeading>Order of the night</SectionHeading>
-      <ol className="relative space-y-3 border-l border-line pl-5">
-        {steps.map((step, index) => {
-          const entries = reveal.nightLog.filter((entry) => entry.step === step);
-          const info = NIGHT_STEP_INFO[step];
-          return (
-            <li key={step} className="relative">
-              <span className="absolute -left-[1.95rem] top-1 flex h-6 w-6 items-center justify-center rounded-full border border-gold-deep bg-panel font-[family-name:var(--font-display)] text-sm text-gold">
-                {index + 1}
-              </span>
-              <p className="font-[family-name:var(--font-display)] text-xl text-[#f3e6c8]">
-                {info.label}
-              </p>
-              {entries.length ? (
-                entries.map((entry, entryIndex) => (
-                  <p key={entryIndex} className="mt-1 leading-relaxed">
-                    {entry.summary}
-                  </p>
-                ))
-              ) : (
-                <p className="mt-1 text-muted">No one acted.</p>
-              )}
-            </li>
-          );
-        })}
-        {nonWaking.length ? (
-          <li className="relative">
-            <span className="absolute -left-[1.95rem] top-1 h-6 w-6 rounded-full border border-line bg-panel" />
-            <p className="font-[family-name:var(--font-display)] text-xl text-[#f3e6c8]">
-              Never woke
-            </p>
-            <p className="mt-1 text-muted">
-              {[...new Set(nonWaking)].map(displayName).join(", ")}
-            </p>
-          </li>
-        ) : null}
-      </ol>
+      <p className="-mt-1 mb-4 text-center text-sm text-muted">
+        Every card in play, in the order it was called, and what happened.
+      </p>
+      <NightTimeline deck={deck} events={reveal.nightLog} />
 
       <SectionHeading>Every player&rsquo;s card</SectionHeading>
       <ul className="space-y-3">

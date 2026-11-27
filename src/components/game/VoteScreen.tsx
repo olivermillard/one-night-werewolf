@@ -1,4 +1,4 @@
-import { CardsInPlay } from "@/components/game/CardsInPlay";
+import { NightTimeline } from "@/components/game/NightTimeline";
 import { Button, SectionHeading, Title } from "@/components/game/ui";
 import { MAX_VOTES_PER_PLAYER } from "@/lib/game";
 import type { GameView } from "@/lib/view";
@@ -76,11 +76,11 @@ export function VoteScreen({
           </Button>
         )}
       </div>
-      <SectionHeading>Cards in play</SectionHeading>
-      <p className="-mt-1 mb-3 text-center text-sm text-muted">
-        Numbered in the order they woke. Three of these are in the center.
+      <SectionHeading>Order of the night</SectionHeading>
+      <p className="-mt-1 mb-4 text-center text-sm text-muted">
+        Every card in the deck, in the order it is called. Three are in the center, so not every step had someone awake.
       </p>
-      <CardsInPlay deck={view.room.deck} />
+      <NightTimeline deck={view.room.deck} />
     </>
   );
 }

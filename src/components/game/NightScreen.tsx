@@ -1,4 +1,5 @@
 import { CardBack, MiniRole } from "@/components/cards/RoleCard";
+import { Moon, moonForStep } from "@/components/game/Moon";
 import { Button, Title } from "@/components/game/ui";
 import {
   CENTER_LABELS,
@@ -41,16 +42,13 @@ export function NightScreen({
   if (!prompt) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <svg viewBox="0 0 120 120" className="candle-pulse mb-6 h-32 w-32" aria-hidden>
-          <defs>
-            <radialGradient id="eyes-closed-halo">
-              <stop offset="0.45" stopColor="#e9dcc0" stopOpacity="0.25" />
-              <stop offset="1" stopColor="#e9dcc0" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-          <circle cx="60" cy="60" r="58" fill="url(#eyes-closed-halo)" />
-          <path d="M74 30a32 32 0 1 0 0 60a26 26 0 1 1 0-60Z" fill="#e9dcc0" />
-        </svg>
+        <div className="relative mb-6 h-32 w-32">
+          <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,#e9dcc040_35%,transparent_70%)] blur-md" />
+          <Moon
+            lit={view.night ? moonForStep(view.night.current, view.night.steps.length) : 0.5}
+            className="candle-pulse relative h-full w-full"
+          />
+        </div>
         <Title kicker="Night">Eyes closed</Title>
         <p className="text-lg text-muted">Stay quiet. Your screen will change when it is your turn.</p>
       </div>
