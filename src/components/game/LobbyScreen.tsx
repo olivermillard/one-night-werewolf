@@ -10,12 +10,15 @@ import {
   requiredCardCount,
   type Role,
 } from "@/lib/game";
+import { playEndSound, unlockAudio } from "@/lib/client/sound";
+import { END_SOUND_OPTIONS, type EndSoundId } from "@/lib/settings";
 import type { GameView } from "@/lib/view";
 
 export interface LobbySettings {
   deck: Role[];
   dayTimerSeconds: number;
   allWerewolvesMustDie: boolean;
+  endSound: EndSoundId;
 }
 import { useMemo, useState } from "react";
 
@@ -35,10 +38,12 @@ export function LobbyScreen({
   const [deck, setDeck] = useState<Role[]>(view.room.deck);
   const [timer, setTimer] = useState(view.room.dayTimerSeconds);
   const allWolves = view.room.houseRules.allWerewolvesMustDie;
+  const endSound = view.room.endSound;
   const settings = (overrides: Partial<LobbySettings> = {}): LobbySettings => ({
     deck,
     dayTimerSeconds: timer,
     allWerewolvesMustDie: allWolves,
+    endSound,
     ...overrides,
   });
   const [copied, setCopied] = useState(false);
@@ -161,40 +166,89 @@ export function LobbyScreen({
         })}
       </div>
 
-      <SectionHeading>House rules</SectionHeading>
+      <SectionHeading>Host settings</SectionHeading>
       <Panel>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="font-[family-name:var(--font-display)] text-xl text-[#f3e6c8]">
-              Every Werewolf must die
-            </p>
-            <p className="mt-1 leading-snug text-muted">
-              {allWolves
-                ? "The village wins only if every Werewolf held by a player dies."
-                : "Official rule: the village wins if at least one Werewolf dies."}
-            </p>
-          </div>
-          {view.me.isHost ? (
-            <button
-              type="button"
-              role="switch"
-              aria-checked={allWolves}
-              aria-label="Every Werewolf must die"
-              onClick={() => onSettings(settings({ allWerewolvesMustDie: !allWolves }))}
-              className={`relative mt-1 h-8 w-14 shrink-0 rounded-full border transition-colors duration-200 ${
-                allWolves ? "border-[#f0d89a] bg-gold-deep" : "border-line bg-[#120d0a]"
-              }`}
-            >
-              <span
-                className={`absolute top-1 left-1 h-[1.375rem] w-[1.375rem] rounded-full shadow transition-transform duration-200 ${
-                  allWolves ? "translate-x-6 bg-[#f3e6c8]" : "translate-x-0 bg-muted"
-                }`}
-              />
-            </button>
-          ) : (
-            <span className="small-caps mt-1 shrink-0 tracking-[0.15em] text-gold">
-              {allWolves ? "On" : "Off"}
-            </span>
+        <div className="space-y-6">
+          <fieldset>
+            <legend className="font-[family-name:var(--font-display)] text-xl text-[#f3e6c8]">
+              For the village to win
+            </legend>
+            <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="For the village to win">
+              {[
+                { value: false, title: "One Werewolf", detail: "dies (official)" },
+                { value: true, title: "Every Werewolf", detail: "must die" },
+              ].map((option) => {
+                const selected = allWolves === option.value;
+                return (
+                  <button
+                    key={option.title}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    disabled={!view.me.isHost}
+                    onClick={() => onSettings(settings({ allWerewolvesMustDie: option.value }))}
+                    className={`min-h-14 rounded-lg border px-3 py-2 text-left transition-colors duration-150 ${
+                      selected
+                        ? "border-[#f0d89a] bg-gold text-[#1c120a]"
+                        : "border-line bg-[#120d0a]/60 text-foreground disabled:opacity-50"
+                    }`}
+                  >
+                    <span className="block text-lg leading-tight">{option.title}</span>
+                    <span className={`block text-sm ${selected ? "text-[#3a2a14]" : "text-muted"}`}>
+                      {option.detail}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend className="font-[family-name:var(--font-display)] text-xl text-[#f3e6c8]">
+              Sound when the votes are in
+            </legend>
+            <p className="mt-0.5 text-sm text-muted">Plays on every phone. Tap ▶ to preview.</p>
+            <ul className="mt-2 space-y-2" role="radiogroup" aria-label="Sound when the votes are in">
+              {END_SOUND_OPTIONS.map((option) => {
+                const selected = endSound === option.id;
+                return (
+                  <li key={option.id} className="flex gap-2">
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={!view.me.isHost}
+                      onClick={() => onSettings(settings({ endSound: option.id }))}
+                      className={`min-h-12 flex-1 rounded-lg border px-4 text-left text-lg transition-colors duration-150 ${
+                        selected
+                          ? "border-[#f0d89a] bg-gold text-[#1c120a]"
+                          : "border-line bg-[#120d0a]/60 text-foreground disabled:opacity-50"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                    {option.id !== "none" ? (
+                      <button
+                        type="button"
+                        aria-label={`Preview ${option.label}`}
+                        onClick={() => {
+                          unlockAudio();
+                          playEndSound(option.id);
+                        }}
+                        className="min-h-12 w-12 shrink-0 rounded-lg border border-line bg-[#120d0a]/60 text-gold active:bg-panel-raised"
+                      >
+                        ▶
+                      </button>
+                    ) : (
+                      <span className="w-12 shrink-0" />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </fieldset>
+          {view.me.isHost ? null : (
+            <p className="text-center text-sm text-muted">Only the host can change these.</p>
           )}
         </div>
       </Panel>

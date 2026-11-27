@@ -1,7 +1,10 @@
 import type { Command } from "@/lib/commands";
 import {
   beginNight,
-  createDealtState,
+  createTableState,
+  claimCard,
+  claimedSlot,
+  tableIsComplete,
   getPrompt,
   hardValidateDeck,
   nightIsComplete,
@@ -24,10 +27,13 @@ import {
 } from "@/lib/game/night";
 import { emptyStepDelayMs, tokensMatch } from "@/lib/server/auth";
 import { HttpError } from "@/lib/server/http";
+import { DEFAULT_END_SOUND, isEndSoundId, type EndSoundId } from "@/lib/settings";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type {
   GameView,
   NightProgress,
+  TableView,
+  WaitingOn,
   PrivateView,
   PublicPlayer,
   PublicRoom,
@@ -45,6 +51,7 @@ export interface RoomRow {
   view_version: number;
   round: number;
   all_werewolves_must_die: boolean;
+  end_sound: EndSoundId;
 }
 
 export interface PlayerRow {
@@ -96,6 +103,7 @@ function mapRoom(row: Record<string, unknown>): RoomRow {
     round: Number(row.round ?? 0),
     // Defaults to on (and copes with databases that predate the column).
     all_werewolves_must_die: row.all_werewolves_must_die !== false,
+    end_sound: isEndSoundId(row.end_sound) ? row.end_sound : DEFAULT_END_SOUND,
   };
 }
 
@@ -311,6 +319,9 @@ async function persist(args: {
   if (args.room.all_werewolves_must_die !== args.previous.all_werewolves_must_die) {
     update.all_werewolves_must_die = args.room.all_werewolves_must_die;
   }
+  if (args.room.end_sound !== args.previous.end_sound) {
+    update.end_sound = args.room.end_sound;
+  }
   const { data, error } = await db
     .from("rooms")
     .update(update)
@@ -323,6 +334,12 @@ async function persist(args: {
       throw new HttpError(
         503,
         "House rules need a database update (migration 0002) before they can be changed.",
+      );
+    }
+    if (/end_sound/.test(error.message)) {
+      throw new HttpError(
+        503,
+        "The end sound needs a database update (migration 0003) before it can be changed.",
       );
     }
     throw new HttpError(500, error.message);
@@ -380,6 +397,7 @@ function buildView(
     hostPlayerId: room.host_player_id,
     round: room.round,
     houseRules: { allWerewolvesMustDie: room.all_werewolves_must_die },
+    endSound: room.end_sound,
   };
   const mePublic: PublicPlayer = {
     id: me.id,
@@ -404,7 +422,12 @@ function buildView(
     // reveal (as at a real table). Night prompts carry what a role may see.
     const showOriginal = room.phase === "deal" || room.phase === "reveal";
     if (showOriginal) {
-      privateView.originalRole = secret.state.original.players[me.id] ?? null;
+      const slot = claimedSlot(secret.state, me.id);
+      privateView.originalRole = secret.state.table
+        ? slot === null
+          ? null
+          : (secret.state.table.slots[slot] ?? null)
+        : (secret.state.original.players[me.id] ?? null);
     }
     if (room.phase === "night") {
       privateView.prompt = getPrompt(secret.state, me.id);
@@ -429,7 +452,51 @@ function buildView(
     night = { steps, current: index === -1 ? steps.length : index };
   }
 
-  return { room: publicRoom, me: mePublic, private: privateView, night };
+  let table: TableView | null = null;
+  if (secret?.state.table && room.phase === "deal") {
+    table = {
+      taken: secret.state.table.claims.map((claim) => claim !== null),
+      mySlot: claimedSlot(secret.state, me.id),
+    };
+  }
+
+  return {
+    room: publicRoom,
+    me: mePublic,
+    private: privateView,
+    night,
+    table,
+    waitingOn: me.is_host ? waitingOn(room, players, secret) : null,
+  };
+}
+
+/**
+ * For the host: who the game is waiting on right now. Never filled in at
+ * night, where naming who hasn't acted would reveal their role.
+ */
+function waitingOn(
+  room: RoomRow,
+  players: PlayerRow[],
+  secret: SecretRow | null,
+): WaitingOn | null {
+  const names = (list: PlayerRow[]) =>
+    [...list].sort((a, b) => a.seat - b.seat).map((player) => player.name);
+  if (room.phase === "deal" && secret) {
+    if (!tableIsComplete(secret.state)) {
+      return {
+        action: "take a card",
+        names: names(players.filter((p) => claimedSlot(secret.state, p.id) === null)),
+      };
+    }
+    return { action: "say they're ready", names: names(players.filter((p) => !p.ready)) };
+  }
+  if (room.phase === "vote" && secret) {
+    return {
+      action: "vote",
+      names: names(players.filter((p) => !hasVoted(secret.state.votes, p.id))),
+    };
+  }
+  return null;
 }
 
 async function savePlayersReady(players: PlayerRow[]): Promise<void> {
@@ -574,6 +641,7 @@ async function runCommandOnce(args: {
           typeof command.allWerewolvesMustDie === "boolean"
             ? command.allWerewolvesMustDie
             : room.all_werewolves_must_die,
+        end_sound: isEndSoundId(command.endSound) ? command.endSound : room.end_sound,
       };
       bump = true;
       break;
@@ -595,7 +663,8 @@ async function runCommandOnce(args: {
           : recommendedDeck(players.length);
       const errors = hardValidateDeck(deck, players.length);
       if (errors.length) throw new HttpError(400, errors[0] ?? "Invalid deck.");
-      const dealt = createDealtState(toEnginePlayers(players), deck, Math.random, {
+      // Cards go face down on the table; players pick their own.
+      const dealt = createTableState(toEnginePlayers(players), deck, Math.random, {
         allWerewolvesMustDie: room.all_werewolves_must_die,
       });
       players = players.map((player) => ({ ...player, ready: false }));
@@ -617,6 +686,9 @@ async function runCommandOnce(args: {
         if (room.phase !== "lobby") break;
         throw new HttpError(400, "You can only ready up after cards are dealt.");
       }
+      if (secret && claimedSlot(secret.state, me.id) === null && secret.state.table) {
+        throw new HttpError(400, "Take a card first.");
+      }
       players = players.map((player) =>
         player.id === me.id ? { ...player, ready: true } : player,
       );
@@ -624,17 +696,32 @@ async function runCommandOnce(args: {
       // could overwrite another player who readied up concurrently.
       await savePlayersReady(players.filter((player) => player.id === me.id));
       bump = true;
-      if (players.every((player) => player.ready) && secret) {
+      if (players.every((player) => player.ready) && secret && tableIsComplete(secret.state)) {
         const started = beginDealtNight(room, secret.state, now);
         room = started.room;
         secret = started.secret;
       }
       break;
     }
+    case "claim": {
+      if (room.phase !== "deal" || !secret) {
+        throw new HttpError(400, "There are no cards to take right now.");
+      }
+      try {
+        secret = { ...secret, state: claimCard(secret.state, me.id, command.slot) };
+      } catch (error) {
+        throw new HttpError(400, error instanceof Error ? error.message : "Couldn't take that card.");
+      }
+      bump = true;
+      break;
+    }
     case "begin-night": {
       requireHost(me);
       if (room.phase !== "deal" || !secret) {
         throw new HttpError(400, "Night can only start after the deal.");
+      }
+      if (!tableIsComplete(secret.state)) {
+        throw new HttpError(400, "Not everyone has taken a card yet.");
       }
       const started = beginDealtNight(room, secret.state, now);
       room = started.room;

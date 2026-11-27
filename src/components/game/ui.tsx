@@ -2,7 +2,7 @@
 
 import { Moon, moonForStep } from "@/components/game/Moon";
 import { NIGHT_STEP_INFO } from "@/lib/game";
-import type { NightProgress } from "@/lib/view";
+import type { NightProgress, WaitingOn } from "@/lib/view";
 import { useEffect, useState, type ReactNode } from "react";
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -193,5 +193,18 @@ export function HostResetButton({ onReset }: { onReset: () => void }) {
     >
       {armed ? "Tap again to reset" : "Reset game"}
     </button>
+  );
+}
+
+/** Host only: who the game is still waiting on in this phase. */
+export function WaitingOnBanner({ waiting }: { waiting: WaitingOn }) {
+  if (waiting.names.length === 0) return null;
+  return (
+    <div className="mb-5 rounded-lg border border-line bg-panel/85 px-4 py-3">
+      <p className="small-caps text-sm tracking-[0.2em] text-gold">
+        Host · waiting on {waiting.names.length} to {waiting.action}
+      </p>
+      <p className="mt-1 text-lg leading-snug text-[#f3e6c8]">{waiting.names.join(", ")}</p>
+    </div>
   );
 }

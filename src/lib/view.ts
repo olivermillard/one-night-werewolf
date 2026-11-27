@@ -1,3 +1,4 @@
+import type { EndSoundId } from "@/lib/settings";
 import type { CalledNightStep } from "@/lib/game/night";
 import type {
   FlashReveal,
@@ -28,6 +29,8 @@ export interface PublicRoom {
   hostPlayerId: string | null;
   round: number;
   houseRules: HouseRules;
+  /** Host's choice of sound when the last vote is in. */
+  endSound: EndSoundId;
 }
 
 export interface RevealPayload {
@@ -64,11 +67,27 @@ export interface NightProgress {
   current: number;
 }
 
+/** The face-down cards players pick from at the deal. */
+export interface TableView {
+  /** One entry per card on the table; true once someone has taken it. */
+  taken: boolean[];
+  /** The card this player took, if any. */
+  mySlot: number | null;
+}
+
+/** Host only: who the game is waiting on in the current phase. */
+export interface WaitingOn {
+  action: string;
+  names: string[];
+}
+
 export interface GameView {
   room: PublicRoom;
   me: PublicPlayer;
   private: PrivateView;
   night: NightProgress | null;
+  table: TableView | null;
+  waitingOn: WaitingOn | null;
 }
 
 export interface SessionPayload {

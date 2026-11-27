@@ -13,15 +13,17 @@ import {
   NightProgressBar,
   Shell,
   Title,
+  WaitingOnBanner,
 } from "@/components/game/ui";
 import { VoteScreen } from "@/components/game/VoteScreen";
 import { createRoom, fetchView, joinRoom, sendCommand } from "@/lib/client/api";
+import { playEndSound, unlockAudio } from "@/lib/client/sound";
 import type { Command } from "@/lib/commands";
 import { assertNever, type NightAction, type Phase } from "@/lib/game";
 import { clearSession, loadSession, saveSession, subscribeSession } from "@/lib/session";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import type { GameView, SessionPayload } from "@/lib/view";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 export function GameApp({ code }: { code?: string }) {
   const stored = useSyncExternalStore(subscribeSession, loadSession, () => null);
@@ -125,6 +127,26 @@ export function GameApp({ code }: { code?: string }) {
       void client.removeChannel(channel);
     };
   }, [roomId, roomCode, session, refresh]);
+
+  // Browsers only allow sound after a tap, so unlock audio on the first one.
+  useEffect(() => {
+    const unlock = () => unlockAudio();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    return () => window.removeEventListener("pointerdown", unlock);
+  }, []);
+
+  // Play the host's chosen sound the moment the last vote is in
+  // (vote -> reveal). Only on that transition, so reloading the reveal
+  // doesn't replay it.
+  const phase = view?.room.phase;
+  const endSound = view?.room.endSound;
+  const previousPhase = useRef(phase);
+  useEffect(() => {
+    if (previousPhase.current === "vote" && phase === "reveal" && endSound) {
+      playEndSound(endSound);
+    }
+    previousPhase.current = phase;
+  }, [phase, endSound]);
 
   const shareUrl = view ? `/r/${view.room.code}` : "";
 
@@ -253,6 +275,7 @@ export function GameApp({ code }: { code?: string }) {
   return (
     <Shell>
       <ErrorBanner message={error} />
+      {view.waitingOn ? <WaitingOnBanner waiting={view.waitingOn} /> : null}
       <PhaseView
         view={view}
         shareUrl={shareUrl}
@@ -266,6 +289,7 @@ export function GameApp({ code }: { code?: string }) {
           })().catch(() => undefined);
         }}
         onKick={(playerId) => void act({ type: "kick", playerId }).catch(() => undefined)}
+        onClaim={(slot) => void act({ type: "claim", slot }).catch(() => undefined)}
         onReady={() => void act({ type: "ready" }).catch(() => undefined)}
         onBeginNight={() => void act({ type: "begin-night" }).catch(() => undefined)}
         onAction={(action) => void act({ type: "night-action", action }).catch(() => undefined)}
@@ -289,6 +313,7 @@ function PhaseView({
   onSettings,
   onStart,
   onKick,
+  onClaim,
   onReady,
   onBeginNight,
   onAction,
@@ -302,6 +327,7 @@ function PhaseView({
   onSettings: (settings: LobbySettings) => void;
   onStart: (settings: LobbySettings) => void;
   onKick: (playerId: string) => void;
+  onClaim: (slot: number) => void;
   onReady: () => void;
   onBeginNight: () => void;
   onAction: (action: NightAction) => void;
@@ -324,7 +350,12 @@ function PhaseView({
       );
     case "deal":
       return (
-        <DealScreen view={view} onReady={onReady} onBeginNight={onBeginNight} />
+        <DealScreen
+          view={view}
+          onClaim={onClaim}
+          onReady={onReady}
+          onBeginNight={onBeginNight}
+        />
       );
     case "night":
       return (

@@ -1,3 +1,4 @@
+import type { EndSoundId } from "@/lib/settings";
 import type { NightAction, Role } from "@/lib/game";
 
 export type Command =
@@ -6,8 +7,10 @@ export type Command =
       deck: Role[];
       dayTimerSeconds: number;
       allWerewolvesMustDie?: boolean;
+      endSound?: EndSoundId;
     }
   | { type: "start" }
+  | { type: "claim"; slot: number }
   | { type: "ready" }
   | { type: "begin-night" }
   | { type: "night-action"; action: NightAction }

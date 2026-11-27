@@ -141,6 +141,11 @@ export interface GameState {
   winners: WinResult | null;
   /** Fixed when the cards are dealt. Missing in games saved before it existed. */
   houseRules?: HouseRules;
+  /**
+   * Face-down cards players pick from at the start. `claims[i]` is the player
+   * who took `slots[i]`. Absent in games dealt before picking existed.
+   */
+  table?: { slots: Role[]; claims: (PlayerId | null)[] };
 }
 
 export function assertNever(value: never): never {

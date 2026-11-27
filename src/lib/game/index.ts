@@ -6,3 +6,4 @@ export * from "./positions";
 export * from "./night";
 export * from "./vote";
 export * from "./win";
+export * from "./table";
