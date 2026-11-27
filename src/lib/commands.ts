@@ -3,9 +3,10 @@ import type { NightAction, Role } from "@/lib/game";
 
 export type Command =
   | {
+      /** Only the fields sent are changed. */
       type: "settings";
-      deck: Role[];
-      dayTimerSeconds: number;
+      deck?: Role[];
+      dayTimerSeconds?: number;
       allWerewolvesMustDie?: boolean;
       endSound?: EndSoundId;
     }

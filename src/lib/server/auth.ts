@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 
 export function createPlayerToken(): string {
   return randomBytes(24).toString("base64url");
@@ -29,4 +29,9 @@ export function randomRoomCode(): string {
 
 export function emptyStepDelayMs(rng: () => number = Math.random): number {
   return 4000 + Math.floor(rng() * 5000);
+}
+
+/** A uniform number in [0, 1) from the OS's secure random source, for dealing cards. */
+export function secureRandom(): number {
+  return randomInt(0, 2 ** 47) / 2 ** 47;
 }

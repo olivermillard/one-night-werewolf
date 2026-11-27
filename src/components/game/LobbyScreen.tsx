@@ -20,7 +20,7 @@ export interface LobbySettings {
   allWerewolvesMustDie: boolean;
   endSound: EndSoundId;
 }
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export function LobbyScreen({
   view,
@@ -31,14 +31,30 @@ export function LobbyScreen({
 }: {
   view: GameView;
   shareUrl: string;
-  onSettings: (settings: LobbySettings) => void;
+  onSettings: (settings: Partial<LobbySettings>) => void;
   onStart: (settings: LobbySettings) => void;
   onKick: (playerId: string) => void;
 }) {
   const [deck, setDeck] = useState<Role[]>(view.room.deck);
   const [timer, setTimer] = useState(view.room.dayTimerSeconds);
-  const allWolves = view.room.houseRules.allWerewolvesMustDie;
-  const endSound = view.room.endSound;
+  // Host's taps show at once; they settle to the server's value when it
+  // confirms (or snap back if it refuses).
+  const [pendingRule, setPendingRule] = useState<boolean | null>(null);
+  const [pendingSound, setPendingSound] = useState<EndSoundId | null>(null);
+  const serverRule = view.room.houseRules.allWerewolvesMustDie;
+  const serverSound = view.room.endSound;
+  useEffect(() => {
+    if (pendingRule === null && pendingSound === null) return;
+    const id = window.setTimeout(() => {
+      setPendingRule(null);
+      setPendingSound(null);
+    }, 4000);
+    return () => window.clearTimeout(id);
+  }, [pendingRule, pendingSound]);
+  const allWolves =
+    pendingRule !== null && pendingRule !== serverRule ? pendingRule : serverRule;
+  const endSound =
+    pendingSound !== null && pendingSound !== serverSound ? pendingSound : serverSound;
   const settings = (overrides: Partial<LobbySettings> = {}): LobbySettings => ({
     deck,
     dayTimerSeconds: timer,
@@ -203,7 +219,10 @@ export function LobbyScreen({
                     role="radio"
                     aria-checked={selected}
                     disabled={!view.me.isHost}
-                    onClick={() => onSettings(settings({ allWerewolvesMustDie: option.value }))}
+                    onClick={() => {
+                      setPendingRule(option.value);
+                      onSettings({ allWerewolvesMustDie: option.value });
+                    }}
                     className={`min-h-14 rounded-lg border px-3 py-2 text-left transition-colors duration-150 ${
                       selected
                         ? "border-[#f0d89a] bg-gold text-[#1c120a]"
@@ -235,7 +254,10 @@ export function LobbyScreen({
                       role="radio"
                       aria-checked={selected}
                       disabled={!view.me.isHost}
-                      onClick={() => onSettings(settings({ endSound: option.id }))}
+                      onClick={() => {
+                        setPendingSound(option.id);
+                        onSettings({ endSound: option.id });
+                      }}
                       className={`min-h-12 flex-1 rounded-lg border px-4 text-left text-lg transition-colors duration-150 ${
                         selected
                           ? "border-[#f0d89a] bg-gold text-[#1c120a]"

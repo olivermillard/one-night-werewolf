@@ -62,6 +62,22 @@ describe("when a tie decides who dies", () => {
     });
   });
 
+  it("3-3-2: the top two are tied with each other, so no tie-break; both die", () => {
+    expect(planDeaths(P, ballots({ ann: 3, ben: 3, cat: 2 }))).toEqual({
+      kind: "decided",
+      deaths: ["ann", "ben"],
+    });
+  });
+
+  it("3-2-2: the 3 dies; the two 2s go to a tie-break for second place", () => {
+    expect(planDeaths(P, ballots({ ann: 3, ben: 2, cat: 2 }))).toEqual({
+      kind: "runoff",
+      locked: ["ann"],
+      candidates: ["ben", "cat"],
+      seats: 1,
+    });
+  });
+
   it("6-1-1: only the 6 dies (nobody else reached 2 votes)", () => {
     expect(planDeaths(P, ballots({ ann: 6, ben: 1, cat: 1 }))).toEqual({
       kind: "decided",

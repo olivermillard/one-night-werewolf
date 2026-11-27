@@ -69,3 +69,31 @@ describe("picking cards from the table", () => {
     expect(tableIsComplete(legacy)).toBe(true);
   });
 });
+
+describe("dealing is random", () => {
+  it("every card lands in every position about equally often", async () => {
+    const { secureRandom } = await import("../server/auth");
+    const players = playersOf("A", "B", "C", "D", "E", "F");
+    const cards: Role[] = ["werewolf", "werewolf", "seer", "robber", "troublemaker", "villager", "villager", "villager", "insomniac"];
+    const deals = 9000;
+    // How often each role lands in the first position, and in the last.
+    const first: Record<string, number> = {};
+    const last: Record<string, number> = {};
+    const seen = new Set<string>();
+    for (let i = 0; i < deals; i += 1) {
+      const slots = createTableState(players, cards, secureRandom).table!.slots;
+      first[slots[0]!] = (first[slots[0]!] ?? 0) + 1;
+      last[slots[8]!] = (last[slots[8]!] ?? 0) + 1;
+      seen.add(slots.join(","));
+    }
+    for (const role of new Set(cards)) {
+      const copies = cards.filter((c) => c === role).length;
+      const expected = (deals * copies) / cards.length;
+      // Within 15% of the expected share.
+      expect(Math.abs(first[role]! - expected) / expected).toBeLessThan(0.15);
+      expect(Math.abs(last[role]! - expected) / expected).toBeLessThan(0.15);
+    }
+    // Thousands of different layouts, not a handful repeating.
+    expect(seen.size).toBeGreaterThan(5000);
+  });
+});

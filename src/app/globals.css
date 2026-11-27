@@ -233,7 +233,60 @@ textarea {
   animation: candle-glow 2.3s ease-in-out infinite;
 }
 
+/*
+ * Deal intro on the pick screen. The deck riffles twice (two 0.55s passes,
+ * ~1.15s with stagger), then each card flies from the deck to its place,
+ * 75ms apart, 0.42s each. Keep in step with SHUFFLE_MS etc. in DealScreen.
+ */
+@keyframes riffle-left {
+  0%, 100% { transform: translate(0, calc(var(--k) * -1.2px)) rotate(0); }
+  35% { transform: translate(-62%, calc(var(--k) * -1.2px)) rotate(-9deg); }
+  65% { transform: translate(-10%, calc(var(--k) * -1.2px)) rotate(-2deg); }
+}
+
+@keyframes riffle-right {
+  0%, 100% { transform: translate(0, calc(var(--k) * -1.2px)) rotate(0); }
+  35% { transform: translate(62%, calc(var(--k) * -1.2px)) rotate(9deg); }
+  65% { transform: translate(10%, calc(var(--k) * -1.2px)) rotate(2deg); }
+}
+
+.riffle-left,
+.riffle-right {
+  animation-duration: 0.55s;
+  animation-iteration-count: 2;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  animation-delay: calc(var(--k) * 6ms);
+}
+
+.riffle-left {
+  animation-name: riffle-left;
+}
+
+.riffle-right {
+  animation-name: riffle-right;
+}
+
+@keyframes card-deal {
+  from {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(0.94);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.card-dealing {
+  animation: card-deal 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 75ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .riffle-left,
+  .riffle-right,
+  .card-dealing {
+    animation: none;
+  }
+
   .candle-flame,
   .candle-glow {
     animation: none;

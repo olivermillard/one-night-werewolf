@@ -95,12 +95,37 @@ export function SectionHeading({ children }: { children: ReactNode }) {
   );
 }
 
-export function ErrorBanner({ message }: { message: string | null }) {
+/**
+ * Errors float at the top of the screen, so they're seen even when the
+ * button that caused them is far down a long page.
+ */
+export function ErrorBanner({
+  message,
+  onDismiss,
+}: {
+  message: string | null;
+  onDismiss?: () => void;
+}) {
   if (!message) return null;
   return (
-    <p className="mb-4 rounded-lg border border-[#d0604d66] bg-[#3a120c]/80 px-4 py-3 text-base text-[#f6dcd0]">
-      {message}
-    </p>
+    <div
+      role="alert"
+      className="fixed inset-x-0 top-[max(0.75rem,env(safe-area-inset-top))] z-50 mx-auto w-full max-w-lg px-4"
+    >
+      <div className="flex items-start gap-3 rounded-lg border border-[#d0604d] bg-[#3a120c]/95 px-4 py-3 text-base text-[#f6dcd0] shadow-[0_10px_30px_#000c] backdrop-blur">
+        <p className="flex-1 leading-snug">{message}</p>
+        {onDismiss ? (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Dismiss"
+            className="-m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xl leading-none text-[#f6dcd0]/80 active:bg-[#5a1a10]"
+          >
+            ×
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

@@ -28,7 +28,7 @@ import {
   applyNightAction,
   publicNightSteps,
 } from "@/lib/game/night";
-import { emptyStepDelayMs, tokensMatch } from "@/lib/server/auth";
+import { emptyStepDelayMs, secureRandom, tokensMatch } from "@/lib/server/auth";
 import { HttpError } from "@/lib/server/http";
 import { DEFAULT_END_SOUND, isEndSoundId, type EndSoundId } from "@/lib/settings";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -691,17 +691,30 @@ async function runCommandOnce(args: {
       if (room.phase !== "lobby") {
         throw new HttpError(400, "Settings can only change in the lobby.");
       }
-      const errors = hardValidateDeck(command.deck, Math.max(players.length, 3));
-      if (command.dayTimerSeconds < 30 || command.dayTimerSeconds > 1800) {
+      // Only check what's being changed: picking a sound mustn't fail
+      // because the deck doesn't match the player count yet.
+      if (Array.isArray(command.deck)) {
+        const errors = hardValidateDeck(command.deck, Math.max(players.length, 3));
+        if (errors.length && players.length >= 3) {
+          throw new HttpError(400, errors[0] ?? "Invalid deck.");
+        }
+      }
+      if (
+        typeof command.dayTimerSeconds === "number" &&
+        (command.dayTimerSeconds < 30 || command.dayTimerSeconds > 1800)
+      ) {
         throw new HttpError(400, "Day timer must be between 30 seconds and 30 minutes.");
       }
-      if (errors.length && players.length >= 3) {
-        throw new HttpError(400, errors[0] ?? "Invalid deck.");
+      if (command.endSound !== undefined && !isEndSoundId(command.endSound)) {
+        throw new HttpError(400, "Unknown sound.");
       }
       room = {
         ...room,
-        deck: command.deck,
-        day_timer_seconds: command.dayTimerSeconds,
+        deck: Array.isArray(command.deck) ? command.deck : room.deck,
+        day_timer_seconds:
+          typeof command.dayTimerSeconds === "number"
+            ? command.dayTimerSeconds
+            : room.day_timer_seconds,
         all_werewolves_must_die:
           typeof command.allWerewolvesMustDie === "boolean"
             ? command.allWerewolvesMustDie
@@ -729,7 +742,8 @@ async function runCommandOnce(args: {
       const errors = hardValidateDeck(deck, players.length);
       if (errors.length) throw new HttpError(400, errors[0] ?? "Invalid deck.");
       // Cards go face down on the table; players pick their own.
-      const dealt = createTableState(toEnginePlayers(players), deck, Math.random, {
+      // Shuffled fresh for every deal with cryptographic randomness.
+      const dealt = createTableState(toEnginePlayers(players), deck, secureRandom, {
         allWerewolvesMustDie: room.all_werewolves_must_die,
       });
       players = players.map((player) => ({ ...player, ready: false }));

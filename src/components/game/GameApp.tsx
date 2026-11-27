@@ -212,7 +212,7 @@ export function GameApp({ code }: { code?: string }) {
   if (session && !view) {
     return (
       <Shell>
-        <ErrorBanner message={error} />
+        <ErrorBanner message={error} onDismiss={() => setError(null)} />
         <div className="flex flex-1 flex-col items-center justify-center pb-16">
           <Candle className="h-40 w-20" />
           <p className="mt-4 text-center text-lg text-muted">Lighting the candles…</p>
@@ -231,7 +231,7 @@ export function GameApp({ code }: { code?: string }) {
         <p className="-mt-2 mb-8 text-center text-lg leading-relaxed text-muted">
           Gather your village. Each player uses their own phone, and every card stays secret until dawn.
         </p>
-        <ErrorBanner message={error} />
+        <ErrorBanner message={error} onDismiss={() => setError(null)} />
         <form
           className="space-y-3"
           onSubmit={(event) => {
@@ -283,7 +283,7 @@ export function GameApp({ code }: { code?: string }) {
 
   return (
     <Shell>
-      <ErrorBanner message={error} />
+      <ErrorBanner message={error} onDismiss={() => setError(null)} />
       {view.waitingOn ? <WaitingOnBanner waiting={view.waitingOn} /> : null}
       <PhaseView
         view={view}
@@ -333,7 +333,7 @@ function PhaseView({
 }: {
   view: GameView;
   shareUrl: string;
-  onSettings: (settings: LobbySettings) => void;
+  onSettings: (settings: Partial<LobbySettings>) => void;
   onStart: (settings: LobbySettings) => void;
   onKick: (playerId: string) => void;
   onClaim: (slot: number) => void;
