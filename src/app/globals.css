@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  --background: #07080f;
+  --foreground: #f4efe4;
+  --panel: #12141c;
+  --gold: #d4b46a;
+  --muted: #9a917f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-gold: var(--gold);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-source-sans);
+  --font-display: var(--font-cinzel);
+}
+
+html {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  min-height: 100dvh;
+  min-height: 100svh;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #1b1630 0%, transparent 55%),
+    radial-gradient(800px 400px at 100% 100%, #1a0f14 0%, transparent 50%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+button,
+a,
+input,
+select {
+  touch-action: manipulation;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+.starfield {
+  background-image:
+    radial-gradient(#fff6 1px, transparent 1px),
+    radial-gradient(#fff3 1px, transparent 1px);
+  background-size: 48px 48px, 84px 84px;
+  background-position: 0 0, 24px 36px;
+}
+
+.card-flip {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.card-flip.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+}
