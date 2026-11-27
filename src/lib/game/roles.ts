@@ -42,7 +42,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: 2,
     blurb: "Find your partner. Survive the vote.",
     rules:
-      "At night, all Werewolves open their eyes and look for other Werewolves. If no one else opens their eyes, the other Werewolves are in the center. Werewolves are on the werewolf team. Lone Wolf: if there is only one Werewolf, that Werewolf may view one center card.",
+      "You wake with the other Werewolves and see who they are. If nobody else opens their eyes, your partner is lying in the center, and you may peek at one center card. You play for the werewolf team: get through the vote without the village catching you.",
     accent: "#b42318",
     accentSoft: "#3a1010",
   },
@@ -53,7 +53,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: 3,
     blurb: "See the Werewolves. Protect them.",
     rules:
-      "Immediately following the Werewolf phase, the Minion wakes and sees who the Werewolves are. The Werewolves do not know who the Minion is. If the Minion dies and no Werewolves die, the Werewolves (and the Minion) win. If no players are Werewolves, the Minion wins as long as one other player (not the Minion) dies. The Minion is on the werewolf team.",
+      "You wake just after the Werewolves and learn who they are, but they never find out who you are. You play for their side, so steer the vote away from them, even onto yourself. If the Werewolves survive, you win with them, even if you die. If no player holds a Werewolf, you win as long as someone other than you is killed.",
     accent: "#7a3cff",
     accentSoft: "#1d1333",
   },
@@ -64,7 +64,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: 4,
     blurb: "Find the other Mason.",
     rules:
-      "When using the Masons, always put both Masons in the game. The Mason wakes up at night and looks for the other Mason. If the Mason doesn’t see another Mason, the other Mason card is in the center. Masons are on the village team.",
+      "Masons always come as a pair. You wake together and see each other, so you know one person you can trust. If nobody wakes with you, the other Mason is lying in the center. You play for the village.",
     accent: "#c9a227",
     accentSoft: "#2a220c",
   },
@@ -75,7 +75,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: 5,
     blurb: "Look at one player or two center cards.",
     rules:
-      "At night, the Seer may look either at one other player’s card or at two of the center cards, but does not move them. The Seer is on the village team.",
+      "You get one look in the dark: either another player's card, or two of the three center cards. Nothing moves. You play for the village.",
     accent: "#3b82f6",
     accentSoft: "#0b1a33",
   },
@@ -86,7 +86,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: 6,
     blurb: "Swap with a player, then look.",
     rules:
-      "At night, the Robber may choose to rob a card from another player and place the Robber card where the other card was. Then the Robber looks at the new card. The player who receives the Robber card is on the village team. The Robber is on the team of the card taken, but does not do the action of the new role at night. If the Robber chooses not to rob, they remain the Robber and are on the village team.",
+      "You may swap your card with another player's, then look at what you took. You now are that role and play for its team, but you don't wake again to use it. The person you robbed becomes the Robber and plays for the village. If you don't steal, you stay the Robber.",
     accent: "#15803d",
     accentSoft: "#0c2416",
   },
@@ -97,7 +97,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: 7,
     blurb: "Swap two other players’ cards.",
     rules:
-      "At night, the Troublemaker may switch the cards of two other players without looking at those cards. The players who receive a different card are now the role (and team) of their new card. The Troublemaker is on the village team.",
+      "You may switch the cards of two other players without seeing either one. Each of them is now whatever card they ended up with. You play for the village.",
     accent: "#ea580c",
     accentSoft: "#2c1408",
   },
@@ -108,7 +108,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: 8,
     blurb: "Must swap with a center card, unseen.",
     rules:
-      "The Drunk is so drunk that they don’t remember their role. When it is time to wake up at night, the Drunk must exchange the Drunk card for any card in the center, but does not look at it. The Drunk is now the new role in front of them and is on that team.",
+      "You must trade your card for one from the center, and you don't get to see the new one. Whatever you picked up is now your role and your team, and you'll only find out at dawn.",
     accent: "#ca8a04",
     accentSoft: "#2a2208",
   },
@@ -119,7 +119,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: 9,
     blurb: "Look at your card at dawn of night.",
     rules:
-      "The Insomniac wakes up and looks at her card to see if it has changed. Only use the Insomniac if the Robber and/or the Troublemaker are in the game. The Insomniac is on the village team.",
+      "Near the end of the night you wake and check your own card, so you'll know whether someone swapped it. You play for the village. Best with a Robber or Troublemaker in the deck.",
     accent: "#6366f1",
     accentSoft: "#16143a",
   },
@@ -130,7 +130,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: null,
     blurb: "No night action. Find the Werewolves.",
     rules:
-      "The Villager has no special abilities, but is definitely not a Werewolf. Players may often claim to be a Villager. The Villager is on the village team.",
+      "No night action and no special power: just your vote and your judgement. Plenty of others will claim to be a Villager too. You play for the village.",
     accent: "#4d7c0f",
     accentSoft: "#14200a",
   },
@@ -141,7 +141,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: null,
     blurb: "If you die, your vote target dies too.",
     rules:
-      "If the Hunter dies, the player the Hunter is pointing at dies as well, regardless of how many votes that target receives. The Hunter is on the village team.",
+      "If you're killed in the vote, the players you voted for are killed with you, however many votes they got. You play for the village.",
     accent: "#92400e",
     accentSoft: "#231409",
   },
@@ -152,7 +152,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: null,
     blurb: "You win only if you die.",
     rules:
-      "The Tanner hates this job so much that they want to die. The Tanner only wins if they die. If the Tanner dies, the Werewolves do not win. If the Tanner dies and the village also kills enough Werewolves to win, the village team wins too. The Tanner is considered a member of the village (but is not on their team), so if the Tanner dies when all Werewolves are in the center, the village team loses. The Tanner is not on the werewolf or the villager team.",
+      "You're sick of village life and want to be killed: you win only if you die. If you die, the Werewolves can't win. You're on nobody's team, so if every Werewolf is in the center and you're killed, the village loses too.",
     accent: "#a8a29e",
     accentSoft: "#1c1917",
   },
@@ -163,7 +163,7 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     nightOrder: 1,
     blurb: "Copy another player’s role.",
     rules:
-      "The Doppelgänger wakes first, looks at (but does not switch) one other player’s card, and becomes that role and team. Villager, Tanner, or Hunter: do nothing else at night. Werewolf or Mason: wake with that group. Seer, Robber, Troublemaker, or Drunk: do that action immediately (do not wake again when that role is called). Minion: at the end of the Doppelgänger phase, see who the Werewolves are. Insomniac: after the Insomniac, wake and look at your own card. If a player later receives the Doppelgänger card, they are the role the Doppelgänger originally viewed.",
+      "You wake first, look at another player's card, and become a copy of that role on its team. Then you act as it would: a copied Seer, Robber, Troublemaker or Drunk acts straight away; a Werewolf or Mason wakes with the others; a Minion sees the Werewolves; an Insomniac checks their card at the very end. A copied Villager, Hunter or Tanner does nothing more. Whoever ends up holding your card is the role you copied.",
     accent: "#94a3b8",
     accentSoft: "#151a22",
   },

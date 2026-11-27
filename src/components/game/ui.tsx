@@ -233,3 +233,15 @@ export function WaitingOnBanner({ waiting }: { waiting: WaitingOn }) {
     </div>
   );
 }
+
+/** Shown on the home screen and lobby: this is a free, unofficial fan project. */
+export function FanNotice() {
+  return (
+    <p className="mt-10 text-center text-xs leading-relaxed text-muted/80">
+      An unofficial fan project, made for playing with friends. Free, with no ads.
+      <br />
+      Not affiliated with or endorsed by Bézier Games. One Night Ultimate Werewolf is a
+      trademark of Bézier Games.
+    </p>
+  );
+}

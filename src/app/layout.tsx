@@ -15,12 +15,12 @@ const garamond = EB_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "One Night Ultimate Werewolf",
+  title: "One Night Oliver's Werewolf",
   description:
-    "Play One Night Ultimate Werewolf on your phones. Host a room, deal in secret, and hunt at dawn.",
+    "A werewolf party game for one night, played on your phones. Host a room, deal in secret, and hunt at dawn.",
   appleWebApp: {
     capable: true,
-    title: "One Night",
+    title: "Oliver's Werewolf",
     statusBarStyle: "black-translucent",
   },
 };

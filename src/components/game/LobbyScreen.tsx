@@ -1,5 +1,5 @@
 import { MiniRole } from "@/components/cards/RoleCard";
-import { Button, Panel, SectionHeading, Title } from "@/components/game/ui";
+import { Button, FanNotice, Panel, SectionHeading, Title } from "@/components/game/ui";
 import {
   ROLE_COPIES,
   ROLE_INFO,
@@ -326,6 +326,7 @@ export function LobbyScreen({
       ) : (
         <p className="mt-8 text-center text-muted">Waiting for the host to deal.</p>
       )}
+      <FanNotice />
     </>
   );
 }

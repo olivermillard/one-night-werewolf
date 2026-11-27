@@ -1,4 +1,4 @@
--- One Night Ultimate Werewolf
+-- One Night Oliver's Werewolf
 -- Fresh-project schema: public lobby tables, hidden game state, RLS, realtime.
 
 create extension if not exists pgcrypto;

@@ -1,6 +1,8 @@
-# One Night Ultimate Werewolf
+# One Night Oliver's Werewolf
 
-A mobile-first web app for the **base game** of One Night Ultimate Werewolf. Each player uses their own phone. The host creates a room, players join with a short code, and the night order, swaps, votes, and wins are resolved on the server.
+> An unofficial fan project, made for playing with friends. Free, with no ads. Not affiliated with or endorsed by Bézier Games. One Night Ultimate Werewolf is a trademark of Bézier Games. The card art, sounds and rules text here are original to this project.
+
+A mobile-first web app for a one-night werewolf party game. Each player uses their own phone. The host creates a room, players join with a short code, and the night order, swaps, votes, and wins are resolved on the server.
 
 Hidden information (roles, center cards, night actions, votes before reveal) is stored in Postgres tables that **Row Level Security denies to the anon key**. The browser only talks to Next.js API routes, which use the Supabase service role.
 
