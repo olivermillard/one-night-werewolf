@@ -3,6 +3,9 @@ import { Button, Title } from "@/components/game/ui";
 import type { GameView } from "@/lib/view";
 import { useState } from "react";
 
+/** How long a taken card takes to lift and fade off the table (see globals.css). */
+const TAKE_ANIMATION_MS = 970;
+
 export function DealScreen({
   view,
   onClaim,
@@ -14,6 +17,7 @@ export function DealScreen({
   onReady: () => void;
   onBeginNight: () => void;
 }) {
+  const [holdTable, setHoldTable] = useState(false);
   const role = view.private.originalRole;
   const table = view.table;
   const players = view.room.players;
@@ -21,9 +25,20 @@ export function DealScreen({
   const takenCount = table ? table.taken.filter(Boolean).length : players.length;
   const everyoneHasACard = takenCount >= players.length;
 
-  // Haven't taken a card yet: pick one from the table.
-  if (table && table.mySlot === null) {
-    return <PickCard taken={table.taken} onClaim={onClaim} playerCount={players.length} takenCount={takenCount} />;
+  // Haven't taken a card yet (or my card is still animating away): the table.
+  if (table && (table.mySlot === null || holdTable)) {
+    return (
+      <PickCard
+        taken={table.taken}
+        onClaim={(slot) => {
+          setHoldTable(true);
+          window.setTimeout(() => setHoldTable(false), TAKE_ANIMATION_MS);
+          onClaim(slot);
+        }}
+        playerCount={players.length}
+        takenCount={takenCount}
+      />
+    );
   }
 
   return (
@@ -76,12 +91,16 @@ function PickCard({
   playerCount: number;
   takenCount: number;
 }) {
-  // The card I tapped, gone at once while the server confirms.
+  // The card I tapped, animating out while the server confirms.
   const [picked, setPicked] = useState<number | null>(null);
+  // Cards already gone when the table first appeared don't animate.
+  const [takenOnArrival] = useState(() => new Set(taken.flatMap((isTaken, i) => (isTaken ? [i] : []))));
   const columns = taken.length <= 6 ? "grid-cols-3" : "grid-cols-4";
 
+  // The wrapper runs to the bottom of the screen and clips, so my card can
+  // fall off the bottom edge without making the page scroll.
   return (
-    <>
+    <div className="-mx-5 -mb-24 flex flex-1 flex-col overflow-clip px-5 pb-24">
       <Title kicker="The cards are dealt">Take a card</Title>
       <p className="-mt-2 mb-6 text-center text-muted">
         Tap any face-down card to make it yours. The three left over go to the center.
@@ -89,6 +108,14 @@ function PickCard({
       <div className={`grid ${columns} gap-3`}>
         {taken.map((isTaken, slot) => {
           const gone = isTaken || picked === slot;
+          // Mine drops down toward me; others' lift away and fade.
+          const state = !gone
+            ? ""
+            : picked === slot
+              ? "card-mine"
+              : takenOnArrival.has(slot)
+                ? "card-gone"
+                : "card-taken";
           return (
             <button
               key={slot}
@@ -99,13 +126,14 @@ function PickCard({
                 setPicked(slot);
                 onClaim(slot);
                 // If the server says no (someone beat us to it), let them pick again.
-                window.setTimeout(() => setPicked((current) => (current === slot ? null : current)), 2500);
+                window.setTimeout(
+                  () => setPicked((current) => (current === slot ? null : current)),
+                  2500,
+                );
               }}
-              className={`relative transition-[opacity,transform,filter] duration-[220ms] ease-out active:scale-95 motion-reduce:transition-none ${
-                gone
-                  ? "pointer-events-none -translate-y-4 scale-75 rotate-6 opacity-0 blur-[1px]"
-                  : "opacity-100"
-              }`}
+              className={`relative transition-transform duration-150 ease-out active:scale-95 ${
+                gone ? "pointer-events-none" : ""
+              } ${state === "card-mine" ? "z-10" : ""} ${state}`}
             >
               <CardBack className="w-full drop-shadow-[0_10px_18px_#000c]" />
             </button>
@@ -115,6 +143,6 @@ function PickCard({
       <p className="small-caps mt-6 text-center tracking-[0.2em] text-muted">
         {takenCount} of {playerCount} have taken a card
       </p>
-    </>
+    </div>
   );
 }

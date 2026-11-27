@@ -88,6 +88,8 @@ export interface GameView {
   night: NightProgress | null;
   table: TableView | null;
   waitingOn: WaitingOn | null;
+  /** The deployment that produced this view; see next.config.ts. */
+  buildId?: string;
 }
 
 export interface SessionPayload {

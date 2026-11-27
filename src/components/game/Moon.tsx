@@ -1,4 +1,42 @@
-import { useId } from "react";
+"use client";
+
+import { useEffect, useId, useRef, useState } from "react";
+
+const PHASE_CHANGE_MS = 1100;
+
+/**
+ * Ease the moon's lit fraction toward `target` so it waxes smoothly when the
+ * night moves on, rather than snapping. Instant under reduced motion.
+ */
+function useAnimatedLit(target: number): number {
+  const [shown, setShown] = useState(target);
+  const shownRef = useRef(target);
+  useEffect(() => {
+    const from = shownRef.current;
+    if (Math.abs(from - target) < 0.001) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const commit = (value: number) => {
+      shownRef.current = value;
+      setShown(value);
+    };
+    if (reduce) {
+      commit(target);
+      return;
+    }
+    let frame = 0;
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / PHASE_CHANGE_MS);
+      // Ease in and out, like the light creeping across the face.
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      commit(from + (target - from) * eased);
+      if (t < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [target]);
+  return shown;
+}
 
 /**
  * A waxing moon in the deck's woodcut style. `lit` is the illuminated
@@ -18,7 +56,8 @@ export function Moon({
   dim?: boolean;
 }) {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
-  const f = Math.min(1, Math.max(0, lit));
+  const animatedLit = useAnimatedLit(lit);
+  const f = Math.min(1, Math.max(0, animatedLit));
   const r = 10;
   const c = 12;
   // Terminator: an elliptical arc that is a straight line at half moon.

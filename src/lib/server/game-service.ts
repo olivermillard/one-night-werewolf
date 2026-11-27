@@ -467,6 +467,7 @@ function buildView(
     night,
     table,
     waitingOn: me.is_host ? waitingOn(room, players, secret) : null,
+    buildId: process.env.NEXT_PUBLIC_BUILD_ID,
   };
 }
 

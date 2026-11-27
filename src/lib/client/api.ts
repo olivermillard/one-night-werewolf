@@ -25,7 +25,26 @@ export async function api<T>(
   if (!response.ok) {
     throw new Error(await parseError(response));
   }
-  return (await response.json()) as T;
+  const body = (await response.json()) as T;
+  reloadIfOutdated(body);
+  return body;
+}
+
+/**
+ * If the server is a newer deployment than this page, reload so the phone
+ * runs the same version as everyone else. Once per server build, so a
+ * mismatch that a reload can't fix never loops.
+ */
+function reloadIfOutdated(body: unknown): void {
+  if (typeof window === "undefined" || !body || typeof body !== "object") return;
+  const view = "view" in body ? (body as { view?: unknown }).view : body;
+  const serverBuild = (view as { buildId?: unknown } | undefined)?.buildId;
+  const ours = process.env.NEXT_PUBLIC_BUILD_ID;
+  if (typeof serverBuild !== "string" || !ours || serverBuild === ours) return;
+  const key = "onuw.reloadedFor";
+  if (window.sessionStorage.getItem(key) === serverBuild) return;
+  window.sessionStorage.setItem(key, serverBuild);
+  window.location.reload();
 }
 
 export function createRoom(name: string) {
