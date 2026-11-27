@@ -40,11 +40,21 @@ export function RevealScreen({
 
       <h2 className="mt-6 text-sm uppercase tracking-[0.2em] text-muted">Votes</h2>
       <ul className="mt-2 space-y-1 text-sm">
-        {Object.entries(reveal.votes).map(([voter, target]) => (
+        {Object.entries(reveal.votes).map(([voter, targets]) => (
           <li key={voter}>
-            {nameOf(voter)} → {nameOf(target)} ({reveal.tally[target] ?? 0} total)
+            {nameOf(voter)} → {targets.map(nameOf).join(" & ")}
           </li>
         ))}
+      </ul>
+      <ul className="mt-3 space-y-1 text-sm text-muted">
+        {view.room.players
+          .map((player) => ({ player, count: reveal.tally[player.id] ?? 0 }))
+          .sort((a, b) => b.count - a.count)
+          .map(({ player, count }) => (
+            <li key={player.id}>
+              {player.name}: {count} vote{count === 1 ? "" : "s"}
+            </li>
+          ))}
       </ul>
 
       <h2 className="mt-6 text-sm uppercase tracking-[0.2em] text-muted">Cards</h2>

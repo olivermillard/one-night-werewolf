@@ -5,7 +5,7 @@ import { DayScreen } from "@/components/game/DayScreen";
 import { LobbyScreen } from "@/components/game/LobbyScreen";
 import { NightScreen } from "@/components/game/NightScreen";
 import { RevealScreen } from "@/components/game/RevealScreen";
-import { ErrorBanner, Shell } from "@/components/game/ui";
+import { ErrorBanner, HostResetButton, Shell } from "@/components/game/ui";
 import { VoteScreen } from "@/components/game/VoteScreen";
 import { createRoom, fetchView, joinRoom, sendCommand } from "@/lib/client/api";
 import type { Command } from "@/lib/commands";
@@ -264,9 +264,14 @@ export function GameApp({ code }: { code?: string }) {
         onAction={(action) => void act({ type: "night-action", action }).catch(() => undefined)}
         onDismissFlash={() => void act({ type: "dismiss-flash" }).catch(() => undefined)}
         onStartVote={() => void act({ type: "start-vote" }).catch(() => undefined)}
-        onVote={(targetPlayerId) => void act({ type: "vote", targetPlayerId }).catch(() => undefined)}
+        onVote={(targetPlayerIds) => void act({ type: "vote", targetPlayerIds }).catch(() => undefined)}
         onRestart={() => void act({ type: "restart" }).catch(() => undefined)}
       />
+      {view.me.isHost && view.room.phase !== "lobby" ? (
+        <HostResetButton
+          onReset={() => void act({ type: "restart" }).catch(() => undefined)}
+        />
+      ) : null}
     </Shell>
   );
 }
@@ -295,7 +300,7 @@ function PhaseView({
   onAction: (action: NightAction) => void;
   onDismissFlash: () => void;
   onStartVote: () => void;
-  onVote: (playerId: string) => void;
+  onVote: (playerIds: string[]) => void;
   onRestart: () => void;
 }) {
   const phase: Phase = view.room.phase;

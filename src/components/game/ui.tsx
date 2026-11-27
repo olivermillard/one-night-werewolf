@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
 
 export function Shell({ children }: { children: ReactNode }) {
   return (
@@ -72,5 +74,38 @@ export function ErrorBanner({ message }: { message: string | null }) {
     <p className="mb-4 rounded-2xl border border-red-500/40 bg-red-950/50 px-4 py-3 text-sm text-red-100">
       {message}
     </p>
+  );
+}
+
+/**
+ * Host-only control pinned to the bottom-left. The first tap arms it; a
+ * second tap within a few seconds confirms, so a stray tap can't end a game.
+ */
+export function HostResetButton({ onReset }: { onReset: () => void }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const id = window.setTimeout(() => setArmed(false), 3000);
+    return () => window.clearTimeout(id);
+  }, [armed]);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (armed) {
+          setArmed(false);
+          onReset();
+        } else {
+          setArmed(true);
+        }
+      }}
+      className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-50 min-h-11 rounded-full px-4 text-sm font-semibold shadow-lg ${
+        armed
+          ? "bg-[#b42318] text-white"
+          : "border border-white/15 bg-black/60 text-foreground backdrop-blur"
+      }`}
+    >
+      {armed ? "Tap again to reset" : "Reset game"}
+    </button>
   );
 }

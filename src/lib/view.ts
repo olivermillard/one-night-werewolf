@@ -28,7 +28,7 @@ export interface PublicRoom {
 }
 
 export interface RevealPayload {
-  votes: Record<string, string>;
+  votes: Record<string, string[]>;
   tally: Record<string, number>;
   deaths: string[];
   winners: WinResult;
@@ -45,7 +45,7 @@ export interface PrivateView {
   prompt: NightPrompt | null;
   flash: FlashReveal | null;
   eyesClosed: boolean;
-  myVote: string | null;
+  myVotes: string[];
   voteCount: number;
   playerCount: number;
   reveal: RevealPayload | null;

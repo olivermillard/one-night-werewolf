@@ -1,4 +1,5 @@
 import { Button, Title } from "@/components/game/ui";
+import { MAX_VOTES_PER_PLAYER } from "@/lib/game";
 import type { GameView } from "@/lib/view";
 import { useState } from "react";
 
@@ -7,15 +8,27 @@ export function VoteScreen({
   onVote,
 }: {
   view: GameView;
-  onVote: (playerId: string) => void;
+  onVote: (playerIds: string[]) => void;
 }) {
-  const [choice, setChoice] = useState<string | null>(view.private.myVote);
+  const locked = view.private.myVotes;
+  const voted = locked.length > 0;
+  const [choices, setChoices] = useState<string[]>(locked);
+  const selected = voted ? locked : choices;
   const others = view.room.players.filter((player) => player.id !== view.me.id);
-  const voted = Boolean(view.private.myVote);
+
+  function toggle(id: string) {
+    setChoices((current) => {
+      if (current.includes(id)) return current.filter((item) => item !== id);
+      if (current.length >= MAX_VOTES_PER_PLAYER) {
+        return [...current.slice(1), id];
+      }
+      return [...current, id];
+    });
+  }
 
   return (
     <>
-      <Title kicker="Vote">Point at someone</Title>
+      <Title kicker="Vote">Point at up to two players</Title>
       <p className="mb-4 text-sm text-muted">
         {view.private.voteCount}/{view.private.playerCount} votes in. Votes stay hidden until everyone has voted.
       </p>
@@ -25,9 +38,10 @@ export function VoteScreen({
             key={player.id}
             type="button"
             disabled={voted}
-            onClick={() => setChoice(player.id)}
+            aria-pressed={selected.includes(player.id)}
+            onClick={() => toggle(player.id)}
             className={`min-h-14 w-full rounded-2xl px-4 text-left text-lg ${
-              choice === player.id ? "bg-gold text-black" : "bg-white/5"
+              selected.includes(player.id) ? "bg-gold text-black" : "bg-white/5"
             }`}
           >
             {player.name}
@@ -36,10 +50,14 @@ export function VoteScreen({
       </div>
       <div className="mt-6">
         <Button
-          disabled={voted || !choice}
-          onClick={() => choice && onVote(choice)}
+          disabled={voted || choices.length === 0}
+          onClick={() => choices.length && onVote(choices)}
         >
-          {voted ? "Vote locked" : "Lock vote"}
+          {voted
+            ? "Vote locked"
+            : choices.length === 0
+              ? "Pick up to two players"
+              : `Lock vote (${choices.length} of ${MAX_VOTES_PER_PLAYER})`}
         </Button>
       </div>
     </>

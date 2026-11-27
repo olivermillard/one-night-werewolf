@@ -126,7 +126,7 @@ export interface GameState {
   acknowledgedIds: PlayerId[];
   nightLog: NightLogEntry[];
   flashes: Record<PlayerId, FlashReveal | null>;
-  votes: Record<PlayerId, PlayerId>;
+  votes: Record<PlayerId, PlayerId[]>;
   deaths: PlayerId[];
   winners: WinResult | null;
 }

@@ -8,7 +8,7 @@ export type Command =
   | { type: "night-action"; action: NightAction }
   | { type: "dismiss-flash" }
   | { type: "start-vote" }
-  | { type: "vote"; targetPlayerId: string }
+  | { type: "vote"; targetPlayerIds: string[] }
   | { type: "kick"; playerId: string }
   | { type: "restart" }
   | { type: "tick" };

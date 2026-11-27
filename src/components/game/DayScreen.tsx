@@ -1,4 +1,3 @@
-import { RoleCard } from "@/components/cards/RoleCard";
 import { Button, Title } from "@/components/game/ui";
 import type { GameView } from "@/lib/view";
 import { useEffect, useState } from "react";
@@ -11,7 +10,6 @@ export function DayScreen({
   onStartVote: () => void;
 }) {
   const [remaining, setRemaining] = useState(view.room.dayTimerSeconds);
-  const [flipped, setFlipped] = useState(false);
   useEffect(() => {
     const endsAt = view.room.dayEndsAt;
     const id = window.setInterval(() => {
@@ -27,7 +25,6 @@ export function DayScreen({
   }, [view.room.dayEndsAt, view.room.dayTimerSeconds]);
   const minutes = Math.floor(remaining / 60);
   const seconds = String(remaining % 60).padStart(2, "0");
-  const role = view.private.originalRole;
 
   return (
     <>
@@ -36,11 +33,8 @@ export function DayScreen({
         {minutes}:{seconds}
       </p>
       <p className="mb-4 text-sm text-muted">
-        You may look at the card you woke with. Your actual role may have changed.
+        Your card stays face down until the reveal. It may have been swapped in the night.
       </p>
-      {role ? (
-        <RoleCard role={role} flipped={flipped} onClick={() => setFlipped((value) => !value)} />
-      ) : null}
       {view.me.isHost ? (
         <div className="mt-6">
           <Button onClick={onStartVote}>Start the vote</Button>

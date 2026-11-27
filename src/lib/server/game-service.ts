@@ -7,6 +7,8 @@ import {
   nightIsComplete,
   recommendedDeck,
   resolveVotes,
+  normalizeVotes,
+  validateBallot,
   type GameState,
   type Phase,
   type Player,
@@ -53,6 +55,10 @@ interface SecretRow {
 }
 
 export type { Command };
+
+function withNormalizedVotes(state: GameState): GameState {
+  return { ...state, votes: normalizeVotes(state.votes) };
+}
 
 function asRoles(value: unknown): Role[] {
   if (!Array.isArray(value)) return [];
@@ -149,7 +155,7 @@ async function loadRoom(code: string): Promise<{
   const secret = secretData
     ? {
         room_id: String(secretData.room_id),
-        state: secretData.state as GameState,
+        state: withNormalizedVotes(secretData.state as GameState),
         night_advance_at: secretData.night_advance_at
           ? String(secretData.night_advance_at)
           : null,
@@ -247,7 +253,7 @@ function applyClock(
 
   if (nextRoom.phase === "vote" && nextSecret) {
     const everyoneVoted = players.every(
-      (player) => nextSecret!.state.votes[player.id],
+      (player) => nextSecret!.state.votes[player.id]?.length,
     );
     if (players.length >= 3 && everyoneVoted) {
       const resolution = resolveVotes({
@@ -362,18 +368,16 @@ function buildView(
     prompt: null,
     flash: null,
     eyesClosed: room.phase === "night",
-    myVote: null,
+    myVotes: [],
     voteCount: secret ? Object.keys(secret.state.votes).length : 0,
     playerCount: players.length,
     reveal: null,
   };
 
   if (secret) {
-    const showOriginal =
-      room.phase === "deal" ||
-      room.phase === "day" ||
-      room.phase === "vote" ||
-      room.phase === "reveal";
+    // Players see their card once at the deal, then not again until the
+    // reveal (as at a real table). Night prompts carry what a role may see.
+    const showOriginal = room.phase === "deal" || room.phase === "reveal";
     if (showOriginal) {
       privateView.originalRole = secret.state.original.players[me.id] ?? null;
     }
@@ -383,7 +387,7 @@ function buildView(
       privateView.eyesClosed = !privateView.prompt;
     }
     if (room.phase === "vote" || room.phase === "reveal") {
-      privateView.myVote = secret.state.votes[me.id] ?? null;
+      privateView.myVotes = secret.state.votes[me.id] ?? [];
     }
     if (room.phase === "reveal") {
       privateView.reveal = buildReveal(secret.state);
@@ -653,21 +657,24 @@ async function runCommandOnce(args: {
       if (room.phase !== "vote" || !secret) {
         throw new HttpError(400, "It is not time to vote.");
       }
-      if (command.targetPlayerId === me.id) {
-        throw new HttpError(400, "You cannot vote for yourself.");
-      }
-      if (!players.some((player) => player.id === command.targetPlayerId)) {
-        throw new HttpError(400, "Unknown player.");
-      }
-      if (secret.state.votes[me.id]) {
+      const targets = Array.isArray(command.targetPlayerIds)
+        ? command.targetPlayerIds
+        : [];
+      const ballotError = validateBallot(
+        me.id,
+        targets,
+        players.map((player) => player.id),
+      );
+      if (ballotError) throw new HttpError(400, ballotError);
+      if (secret.state.votes[me.id]?.length) {
         throw new HttpError(400, "You already voted.");
       }
       const votes = {
         ...secret.state.votes,
-        [me.id]: command.targetPlayerId,
+        [me.id]: targets,
       };
       secret = { ...secret, state: { ...secret.state, votes } };
-      const everyoneVoted = players.every((player) => votes[player.id]);
+      const everyoneVoted = players.every((player) => votes[player.id]?.length);
       if (everyoneVoted) {
         const resolution = resolveVotes({
           players: toEnginePlayers(players),
