@@ -2,6 +2,7 @@
 
 import { DealScreen } from "@/components/game/DealScreen";
 import { DayScreen } from "@/components/game/DayScreen";
+import { useCandleSnuff } from "@/components/game/useCandleSnuff";
 import { LobbyScreen, type LobbySettings } from "@/components/game/LobbyScreen";
 import { NightScreen } from "@/components/game/NightScreen";
 import { RevealScreen } from "@/components/game/RevealScreen";
@@ -156,6 +157,9 @@ export function GameApp({ code }: { code?: string }) {
     previousPhase.current = phase;
   }, [phase, endSound]);
 
+  // When the day ends, hold the day screen while its candle goes out.
+  const { shown, snuffing } = useCandleSnuff(view);
+
   const shareUrl = view ? `/r/${view.room.code}` : "";
 
   async function handleCreate() {
@@ -287,9 +291,10 @@ export function GameApp({ code }: { code?: string }) {
   return (
     <Shell wide>
       <ErrorBanner message={error} onDismiss={() => setError(null)} />
-      {view.waitingOn ? <WaitingOnBanner waiting={view.waitingOn} /> : null}
+      {!snuffing && view.waitingOn ? <WaitingOnBanner waiting={view.waitingOn} /> : null}
       <PhaseView
-        view={view}
+        view={shown ?? view}
+        snuffing={snuffing}
         shareUrl={shareUrl}
         onSettings={(settings) =>
           void act({ type: "settings", ...settings }).catch(() => undefined)
@@ -321,6 +326,7 @@ export function GameApp({ code }: { code?: string }) {
 
 function PhaseView({
   view,
+  snuffing,
   shareUrl,
   onSettings,
   onStart,
@@ -335,6 +341,8 @@ function PhaseView({
   onRestart,
 }: {
   view: GameView;
+  /** The day just ended: the candle is going out before the vote. */
+  snuffing: boolean;
   shareUrl: string;
   onSettings: (settings: Partial<LobbySettings>) => void;
   onStart: (settings: LobbySettings) => void;
@@ -386,7 +394,7 @@ function PhaseView({
         </Narrow>
       );
     case "day":
-      return <DayScreen view={view} onStartVote={onStartVote} />;
+      return <DayScreen view={view} onStartVote={onStartVote} extinguished={snuffing} />;
     case "vote":
       return <VoteScreen view={view} onVote={onVote} />;
     case "reveal":

@@ -234,6 +234,70 @@ textarea {
 }
 
 /*
+ * The candle going out (about 2.6s; keep SNUFF_MS in useCandleSnuff in step).
+ * The flame gutters and shrinks into the wick, the light dies, the ember
+ * fades, and a wisp of smoke draws itself upward and drifts off.
+ */
+@keyframes candle-snuff {
+  0% { opacity: 1; transform: scale(1, 1); }
+  25% { opacity: 1; transform: scale(1.08, 0.7); }
+  45% { opacity: 0.9; transform: scale(0.75, 1.15); }
+  100% { opacity: 0; transform: scale(0.15, 0.05); }
+}
+
+@keyframes candle-light-out {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes candle-ember {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes candle-smoke-draw {
+  0% { stroke-dashoffset: 1; opacity: 0; }
+  15% { opacity: 0.75; }
+  60% { stroke-dashoffset: 0; opacity: 0.55; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes candle-smoke-rise {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(3px, -16px) scale(1.15, 1.25); }
+}
+
+.candle-snuff {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: candle-snuff 0.55s ease-in forwards;
+}
+
+.candle-light-out {
+  animation: candle-light-out 0.7s ease-out forwards;
+}
+
+.candle-ember {
+  animation: candle-ember 1.4s 0.4s ease-out both;
+}
+
+.candle-smoke {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: candle-smoke-rise 2.2s 0.35s ease-out both;
+}
+
+.candle-smoke-wisp {
+  stroke-dasharray: 1;
+  animation: candle-smoke-draw 2.2s 0.35s ease-out both;
+}
+
+.candle-smoke-wisp-late {
+  animation-duration: 1.9s;
+  animation-delay: 0.6s;
+}
+
+/*
  * Deal intro on the pick screen. The deck riffles twice (two 0.55s passes,
  * ~1.15s with stagger), then each card flies from the deck to its place,
  * 75ms apart, 0.42s each. Keep in step with SHUFFLE_MS etc. in DealScreen.
