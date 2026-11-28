@@ -6,6 +6,7 @@ const TEAM_LABEL = {
   village: "Village",
   werewolf: "Werewolf team",
   tanner: "On their own",
+  poacher: "On their own",
 } as const;
 
 /** Leather card back with a gold lattice and a moon seal. */

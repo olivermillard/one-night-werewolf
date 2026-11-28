@@ -14,15 +14,18 @@ import {
 const STEP_ACTION: Record<CalledNightStep, string> = {
   doppelganger_copy: "Looks at another player's card and becomes that role.",
   doppelganger_action:
-    "If they copied the Seer, Robber, Troublemaker or Drunk, does that action now.",
+    "If they copied a role that acts at once (Seer, Robber, Troublemaker, Drunk, or a custom card), does that action now.",
   doppelganger_minion: "If they copied the Minion, sees who the Werewolves are.",
   werewolves: "Wake and see each other. A lone Werewolf may look at a center card.",
   minion: "Sees who the Werewolves are. They don't see the Minion.",
   masons: "Wake and see each other.",
+  poacher: "Is shown their mark: the player whose death wins them the game.",
   seer: "Looks at one player's card, or two center cards.",
   robber: "May swap cards with another player, then looks at the new card.",
   troublemaker: "May swap two other players' cards without looking.",
+  herbalist: "May swap another player's card with a center card, unseen.",
   drunk: "Swaps their card with a center card without looking.",
+  messenger: "May send one player an anonymous note, read at dawn.",
   insomniac: "Looks at their own card to see if it changed.",
   doppelganger_insomniac: "If they copied the Insomniac, looks at their card.",
 };
@@ -76,6 +79,11 @@ export function NightTimeline({
                   ) : null}
                 </p>
                 <p className="mt-0.5 leading-snug text-muted">{STEP_ACTION[step]}</p>
+                {step === "seer" && counts.mad_seer > 0 ? (
+                  <p className="mt-0.5 leading-snug text-muted">
+                    The Mad Seer wakes now too, believing they are the Seer. Everything they see is false.
+                  </p>
+                ) : null}
                 {happened ? (
                   happened.length ? (
                     happened.map((entry, entryIndex) => (

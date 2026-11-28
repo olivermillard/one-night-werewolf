@@ -4,7 +4,9 @@ import type {
   FlashReveal,
   HouseRules,
   NightLogEntry,
+  NightMessage,
   NightPrompt,
+  PoacherMarks,
   Phase,
   Role,
   WinResult,
@@ -44,6 +46,10 @@ export interface RevealPayload {
   finalCenter: Role[];
   doppelgangerCopy: Role | null;
   nightLog: NightLogEntry[];
+  /** Poacher marks: the mark on the Poacher card, and on a Doppelgänger that copied it. */
+  marks: PoacherMarks;
+  /** Every Messenger note, with its sender. */
+  messages: NightMessage[];
   houseRules: HouseRules;
   /** The tie-break, if one was held. */
   runoff: {
@@ -65,6 +71,8 @@ export interface PrivateView {
   voteCount: number;
   playerCount: number;
   reveal: RevealPayload | null;
+  /** Anonymous Messenger notes sent to this player, shown from dawn on. */
+  messages: string[];
 }
 
 export interface NightProgress {

@@ -14,6 +14,8 @@ const KEY_ROLES: { role: Role; title: string; plural: string }[] = [
   { role: "werewolf", title: "The Werewolf", plural: "The Werewolves" },
   { role: "minion", title: "The Minion", plural: "The Minions" },
   { role: "tanner", title: "The Tanner", plural: "The Tanners" },
+  { role: "poacher", title: "The Poacher", plural: "The Poachers" },
+  { role: "mad_seer", title: "The Mad Seer", plural: "The Mad Seers" },
 ];
 
 export function RevealScreen({
@@ -39,6 +41,7 @@ export function RevealScreen({
     reveal.winners.village ? "The Village" : null,
     reveal.winners.werewolf ? "The Werewolves" : null,
     reveal.winners.tanner ? "The Tanner" : null,
+    reveal.winners.poacher ? "The Poacher" : null,
   ].filter((name): name is string => Boolean(name));
   // "The Werewolves" is plural, as is any pair of winners.
   const plural = winners.length > 1 || winners[0] === "The Werewolves";
@@ -117,6 +120,9 @@ export function RevealScreen({
                 ))}
             </div>
           </Panel>
+
+          {/* Custom cards: the Poacher's mark and the Messenger's notes. */}
+          <NightSecrets reveal={reveal} nameOf={nameOf} />
 
           {/* 3. The vote */}
           <SectionHeading>The vote</SectionHeading>
@@ -328,5 +334,46 @@ function CardRow({
         {note ? <p className="text-sm leading-snug text-muted">{note}</p> : null}
       </div>
     </li>
+  );
+}
+
+function NightSecrets({
+  reveal,
+  nameOf,
+}: {
+  reveal: RevealPayload;
+  nameOf: (id: string) => string;
+}) {
+  // Older games saved before the custom cards have neither field.
+  const marks = [
+    reveal.marks?.poacher ? { card: "Poacher card", id: reveal.marks.poacher } : null,
+    reveal.marks?.doppelganger
+      ? { card: "Doppelgänger-Poacher", id: reveal.marks.doppelganger }
+      : null,
+  ].filter((mark): mark is { card: string; id: string } => Boolean(mark));
+  const messages = reveal.messages ?? [];
+  if (!marks.length && !messages.length) return null;
+  return (
+    <Panel className="mt-4 space-y-3">
+      {marks.map((mark) => (
+        <p key={mark.card} className="text-center text-lg leading-snug">
+          <span className="text-muted">The {mark.card}&rsquo;s mark was </span>
+          <span className="text-[#f3e6c8]">{nameOf(mark.id)}</span>
+          <span className="text-muted">
+            {reveal.deaths.includes(mark.id) ? ", who died." : ", who survived."}
+          </span>
+        </p>
+      ))}
+      {messages.map((message, index) => (
+        <figure key={index} className="text-center">
+          <blockquote className="font-[family-name:var(--font-display)] text-xl leading-snug text-[#f3e6c8]">
+            &ldquo;{message.text}&rdquo;
+          </blockquote>
+          <figcaption className="text-sm text-muted">
+            {nameOf(message.from)} to {nameOf(message.to)}
+          </figcaption>
+        </figure>
+      ))}
+    </Panel>
   );
 }

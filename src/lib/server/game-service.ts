@@ -22,6 +22,7 @@ import {
   type Role,
   ROLES,
   DEFAULT_HOUSE_RULES,
+  disguise,
 } from "@/lib/game";
 import {
   advanceNight,
@@ -323,6 +324,7 @@ function advanceVoting(
     votes: state.votes,
     houseRules: state.houseRules,
     runoff: state.runoff,
+    marks: state.marks,
   });
   return {
     state: { ...state, deaths: resolution.deaths, winners: resolution.winners },
@@ -400,6 +402,7 @@ function buildReveal(state: GameState): RevealPayload {
     votes: state.votes,
     houseRules: state.houseRules,
     runoff: state.runoff,
+    marks: state.marks,
   });
   return {
     votes: state.votes,
@@ -412,6 +415,8 @@ function buildReveal(state: GameState): RevealPayload {
     finalCenter: [...state.current.center],
     doppelgangerCopy: state.doppelgangerCopy,
     nightLog: state.nightLog,
+    marks: state.marks ?? {},
+    messages: state.messages ?? [],
     houseRules: state.houseRules ?? DEFAULT_HOUSE_RULES,
     runoff: state.runoff
       ? {
@@ -460,6 +465,7 @@ function buildView(
     voteCount: secret ? Object.keys(secret.state.votes).length : 0,
     playerCount: players.length,
     reveal: null,
+    messages: [],
   };
 
   if (secret) {
@@ -468,11 +474,20 @@ function buildView(
     const showOriginal = room.phase === "deal" || room.phase === "reveal";
     if (showOriginal) {
       const slot = claimedSlot(secret.state, me.id);
-      privateView.originalRole = secret.state.table
+      const card = secret.state.table
         ? slot === null
           ? null
           : (secret.state.table.slots[slot] ?? null)
         : (secret.state.original.players[me.id] ?? null);
+      // Until the reveal, a Mad Seer's card reads "Seer", even to its holder.
+      privateView.originalRole =
+        card && room.phase === "deal" ? disguise(card) : card;
+    }
+    if (room.phase === "day" || room.phase === "vote" || room.phase === "reveal") {
+      // Messenger notes arrive at dawn, unsigned.
+      privateView.messages = (secret.state.messages ?? [])
+        .filter((message) => message.to === me.id)
+        .map((message) => message.text);
     }
     if (room.phase === "night") {
       privateView.prompt = getPrompt(secret.state, me.id);
@@ -580,7 +595,7 @@ function beginDealtNight(
   secretState: GameState,
   now: Date,
 ): { room: RoomRow; secret: SecretRow } {
-  const nightState = beginNight(secretState);
+  const nightState = beginNight(secretState, secureRandom);
   const timing = configureNightTiming(nightState, now);
   const nextRoom: RoomRow = { ...room, phase: timing.phase };
   if (timing.phase === "day") {
@@ -813,7 +828,12 @@ async function runCommandOnce(args: {
         throw new HttpError(400, "It is not night.");
       }
       try {
-        const nextState = applyNightAction(secret.state, me.id, command.action);
+        const nextState = applyNightAction(
+          secret.state,
+          me.id,
+          command.action,
+          secureRandom,
+        );
         const timing = configureNightTiming(nextState, now);
         secret = {
           ...secret,

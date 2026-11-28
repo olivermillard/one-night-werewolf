@@ -37,6 +37,10 @@ const LABELS: Record<Role, string> = {
   hunter: "Hunter",
   tanner: "Tanner",
   doppelganger: "Doppelganger",
+  mad_seer: "Mad Seer",
+  poacher: "Poacher",
+  herbalist: "Herbalist",
+  messenger: "Messenger",
 };
 
 export function RoleArt({
@@ -95,6 +99,14 @@ function scene(role: Role, u: string): JSX.Element {
       return <Tanner u={u} />;
     case "doppelganger":
       return <Doppelganger u={u} />;
+    case "mad_seer":
+      return <MadSeer u={u} />;
+    case "poacher":
+      return <Poacher u={u} />;
+    case "herbalist":
+      return <Herbalist u={u} />;
+    case "messenger":
+      return <Messenger u={u} />;
     default:
       return assertNever(role);
   }
@@ -884,6 +896,333 @@ function Doppelganger({ u }: { u: string }) {
       {/* hands holding the mask */}
       <path d="M66 196C60 204 62 214 70 216C76 212 78 204 74 196Z" fill={PARCH3} />
       <path d="M134 196C140 204 138 214 130 216C124 212 122 204 126 196Z" fill="#6b7688" />
+    </g>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Mad Seer: crooked seer with a cracked orb under two wrong moons     */
+/* ------------------------------------------------------------------ */
+
+function MadSeer({ u }: { u: string }) {
+  const robe = "#3f5a4a";
+  const robe2 = "#2b3f33";
+  return (
+    <g>
+      <defs>
+        <radialGradient id={`${u}-orb`} cx="0.6" cy="0.4" r="0.66">
+          <stop offset="0" stopColor={PARCH} />
+          <stop offset="0.45" stopColor="#9fb08a" />
+          <stop offset="1" stopColor="#4a5a3a" />
+        </radialGradient>
+      </defs>
+      <Sky u={u} />
+      {/* unsettled, swirling sky */}
+      <path
+        d="M14 120C10 98 30 88 44 98C54 106 46 120 36 114M150 132C160 112 186 116 186 136C186 148 170 150 166 140M60 20C80 8 104 14 110 30"
+        stroke={PARCH3}
+        strokeWidth="2"
+        fill="none"
+        opacity="0.35"
+        strokeLinecap="round"
+      />
+      <Stars pts={[[24, 24, 2], [182, 96, 2.5], [14, 74, 2.5], [176, 16, 2], [132, 18, 1.8]]} />
+      {/* two moons, lit on the wrong sides */}
+      <Crescent cx={36} cy={44} r={14} rot={170} />
+      <Crescent cx={166} cy={48} r={9} rot={-60} fill={PARCH2} />
+      {/* lopsided sky eye, cracked through */}
+      <g transform="rotate(-14 100 68)">
+        <path
+          d="M100 18V28M72 26l5 8M128 24l-4 9M50 40l8 6M150 38l-8 6"
+          stroke={PARCH3}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+        <path d="M40 68Q96 22 160 64Q104 104 40 68Z" fill={INK2} stroke={PARCH2} strokeWidth="3" />
+        <circle cx="104" cy="66" r="19" fill={PARCH} />
+        <circle cx="112" cy="70" r="7" fill="#4a5a3a" />
+        <circle cx="113" cy="71" r="3" fill={INK} />
+        <circle cx="96" cy="60" r="2.5" fill={PARCH} />
+        <path d="M86 40L94 54L88 62L98 74L92 92" stroke={INK} strokeWidth="2" fill="none" strokeLinejoin="round" />
+      </g>
+      {/* tilted hills and leaning pines */}
+      <path d="M0 206C40 186 70 200 110 184C150 170 176 184 200 172V280H0Z" fill={INK3} />
+      <g transform="rotate(10 20 200)">
+        <Pines trees={[[18, 202, 38]]} fill={INK2} />
+      </g>
+      <g transform="rotate(-12 184 176)">
+        <Pines trees={[[184, 178, 42], [168, 182, 26]]} fill={INK2} />
+      </g>
+      {/* the figure, listing to one side */}
+      <g transform="rotate(-6 100 280)">
+        <path
+          d="M100 116C82 116 72 132 70 150C56 168 42 204 34 280H166C158 204 144 168 130 150C128 132 118 116 100 116Z"
+          fill={robe}
+        />
+        <path
+          d="M70 150C58 170 48 210 44 280H60C62 230 70 190 82 164ZM130 150C142 170 152 210 156 280H140C138 230 130 190 118 164Z"
+          fill={robe2}
+        />
+        <path d="M58 230l8 -6l4 10l8 -6M132 240l8 -6l4 10" stroke={robe2} strokeWidth="2" fill="none" />
+        {/* hood opening, head cocked */}
+        <g transform="rotate(14 100 146)">
+          <path d="M100 128C88 128 83 140 85 154C89 166 111 166 115 154C117 140 112 128 100 128Z" fill={INK} />
+          <circle cx="94" cy="145" r="3.2" fill={PARCH2} />
+          <circle cx="94" cy="145" r="1.2" fill={INK} />
+          <circle cx="106" cy="147" r="1.3" fill={PARCH2} />
+          <path d="M91 155Q97 160 101 154Q105 160 110 154" stroke={GOLD2} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        </g>
+        {/* sleeves */}
+        <path d="M74 168C70 188 74 206 86 214L94 204C86 196 84 184 86 172Z" fill={robe2} />
+        <path d="M126 168C130 188 126 206 114 214L106 204C114 196 116 184 114 172Z" fill={robe2} />
+        {/* cracked orb with a broken vision inside */}
+        <circle cx="100" cy="192" r="27" fill="#9fb08a" opacity="0.1" />
+        <circle cx="100" cy="192" r="20" fill={`url(#${u}-orb)`} />
+        <path d="M94 175L100 188L86 196Z" fill={BLOOD} opacity="0.55" />
+        <path d="M100 188L114 182L116 198Z" fill={GOLD} opacity="0.5" />
+        <path d="M100 188L104 210L92 204Z" fill={INK} opacity="0.35" />
+        <path d="M106 199a3 3 0 1 0 0.1 0Z" fill={INK} opacity="0.6" />
+        <path
+          d="M94 173L100 188L86 196M100 188L114 182L119 186M100 188L104 211M104 200L112 204"
+          stroke={INK}
+          strokeWidth="1.6"
+          fill="none"
+          strokeLinejoin="round"
+        />
+        <path d="M96 172L100 174L98 177Z" fill={INK} />
+        {/* hands */}
+        <path d="M84 206C90 214 110 214 116 206L114 212C108 218 92 218 86 212Z" fill={PARCH2} />
+      </g>
+      {/* crooked, guttering candle */}
+      <ellipse cx="176" cy="262" rx="14" ry="4" fill={GOLD} />
+      <g transform="rotate(16 176 260)">
+        <path d="M170 260V226C170 224 182 224 182 226V260Z" fill={PARCH} />
+        <path d="M170 230C168 236 169 242 170 246M182 228C184 234 183 238 182 240M175 226V236" stroke={PARCH2} strokeWidth="2" fill="none" />
+        <path d="M176 225V221" stroke={INK} strokeWidth="1.2" />
+      </g>
+      <path d="M187 222C177 218 177 210 183 202C185 210 189 214 191 222Z" fill={GOLD2} />
+      <path d="M187 220C183 218 182 214 184 210C185 214 187 216 188 220Z" fill={PARCH} />
+    </g>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Poacher: hooded figure crouched with a crossbow, a door marked X    */
+/* ------------------------------------------------------------------ */
+
+function Poacher({ u }: { u: string }) {
+  const cloak = "#3b4a2e";
+  const cloak2 = "#2a3622";
+  return (
+    <g>
+      <Sky u={u} />
+      <Stars pts={[[22, 26], [100, 18, 2], [70, 56, 2.5], [184, 84, 2]]} />
+      <Crescent cx={152} cy={40} r={15} rot={-25} />
+      {/* distant forest */}
+      <Pines
+        trees={[
+          [8, 200, 62],
+          [30, 202, 48],
+          [52, 200, 40],
+          [92, 202, 36],
+          [108, 200, 46],
+          [178, 202, 54],
+          [196, 200, 44],
+        ]}
+        fill={INK3}
+      />
+      {/* the marked cottage */}
+      <path d="M116 176L142 154L168 176Z" fill={INK2} />
+      <rect x="122" y="174" width="40" height="28" fill={INK3} />
+      <path d="M116 176L142 154L168 176" stroke={INK} strokeWidth="2" fill="none" />
+      <rect x="136" y="184" width="12" height="18" fill={WOOD} />
+      <path d="M137.5 186L146.5 200M146.5 186L137.5 200" stroke={BLOOD} strokeWidth="2.6" strokeLinecap="round" />
+      <rect x="126" y="182" width="6" height="6" fill={GOLD} />
+      {/* ground */}
+      <path d="M0 200C50 194 150 196 200 200V280H0Z" fill={FOREST} />
+      <path d="M0 232C60 226 140 230 200 236V280H0Z" fill="#243a27" />
+      <Pines trees={[[194, 246, 104]]} fill={INK2} />
+      {/* snare: bent sapling, cord and noose */}
+      <path d="M182 244Q168 222 150 236" stroke={WOOD2} strokeWidth="3" fill="none" strokeLinecap="round" />
+      <path d="M152 266V244" stroke={WOOD} strokeWidth="4" strokeLinecap="round" />
+      <path d="M150 236C154 246 156 254 150 262" stroke={PARCH3} strokeWidth="1.6" fill="none" />
+      <ellipse cx="140" cy="265" rx="12" ry="4" fill="none" stroke={PARCH3} strokeWidth="2" />
+      {/* crouched poacher */}
+      <path d="M30 256C32 228 44 206 60 196C70 192 80 196 86 206C94 220 102 238 108 256Z" fill={cloak} />
+      <path d="M86 206C94 220 102 238 108 256H92C90 238 86 222 78 210Z" fill={cloak2} />
+      <path d="M44 236C46 224 52 214 60 208M62 250C64 236 68 226 74 218" stroke={cloak2} strokeWidth="2.5" fill="none" />
+      {/* boot */}
+      <path d="M92 254C100 252 110 252 114 258H90Z" fill={INK} />
+      {/* hood */}
+      <path d="M56 204C54 186 66 176 80 180C90 184 94 194 92 204L72 210Z" fill={cloak} />
+      <path d="M78 186C86 186 92 194 90 204C84 206 78 204 76 198C75 194 76 190 78 186Z" fill={INK} />
+      <path d="M83 194h4" stroke={GOLD2} strokeWidth="1.6" strokeLinecap="round" />
+      {/* crossbow, aimed at the marked door */}
+      <path d="M76 220L124 208" stroke={WOOD2} strokeWidth="5" strokeLinecap="round" />
+      <path d="M76 220L70 226" stroke={WOOD} strokeWidth="6" strokeLinecap="round" />
+      <path d="M116 196Q126 208 120 222" stroke={WOOD} strokeWidth="3" fill="none" strokeLinecap="round" />
+      <path d="M116 196L104 211L120 222" stroke={PARCH2} strokeWidth="1" fill="none" />
+      <path d="M104 211L134 204" stroke={PARCH2} strokeWidth="1.8" />
+      <path d="M133 200L140 203L134 208Z" fill={PARCH} />
+      <path d="M104 211l-5 -3M104 211l-4 3" stroke={BLOOD} strokeWidth="2" strokeLinecap="round" />
+      {/* hands */}
+      <circle cx="88" cy="218" r="4" fill={PARCH3} />
+      <circle cx="112" cy="212" r="4" fill={PARCH3} />
+      {/* foreground grass */}
+      <path
+        d="M4 280L8 262M10 280L18 258M16 280L14 264M120 280L124 262M128 280L134 258M136 280L134 266M170 280L176 262M180 280L178 260"
+        stroke={INK2}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </g>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Herbalist: moonlit table with mortar, pestle, bottles and herbs     */
+/* ------------------------------------------------------------------ */
+
+function HerbBundle({ x, len, fill, leaf }: { x: number; len: number; fill: string; leaf: string }) {
+  return (
+    <g>
+      <path d={`M${x} 24V36`} stroke={PARCH3} strokeWidth="1.2" />
+      <path d={`M${x - 2} 36H${x + 2}L${x + 9} ${36 + len * 0.8}Q${x} ${36 + len} ${x - 9} ${36 + len * 0.8}Z`} fill={fill} />
+      <path
+        d={`M${x} 40V${32 + len}M${x - 1.5} 42L${x - 6} ${32 + len * 0.8}M${x + 1.5} 42L${x + 6} ${32 + len * 0.8}`}
+        stroke={leaf}
+        strokeWidth="1.5"
+        fill="none"
+      />
+      <rect x={x - 4} y="36" width="8" height="4" fill={GOLD} />
+    </g>
+  );
+}
+
+function Herbalist({ u }: { u: string }) {
+  const lavender = "#6b5a8a";
+  return (
+    <g>
+      <rect width="200" height="280" fill={INK3} />
+      {/* plank wall */}
+      <path d="M22 0V206M48 0V206M152 0V206M178 0V206M74 0V40M126 0V40M74 120V206M126 120V206" stroke={INK2} strokeWidth="2" />
+      {/* window */}
+      <path d="M58 120V70A42 30 0 0 1 142 70V120Z" fill={`url(#${u}-sky)`} />
+      <Stars pts={[[72, 98, 2], [86, 62, 1.8], [134, 106, 2]]} />
+      <FullMoon cx={118} cy={74} r={15} />
+      <path d="M100 40V120M58 86H142" stroke={INK2} strokeWidth="3" />
+      <path d="M58 120V70A42 30 0 0 1 142 70V120" fill="none" stroke={PARCH3} strokeWidth="5" />
+      <rect x="52" y="118" width="96" height="7" fill={PARCH3} />
+      {/* moonlight falling across the table */}
+      <path d="M58 125H142L180 206H24Z" fill={PARCH} opacity="0.07" />
+      {/* beam with hanging herbs */}
+      <rect y="14" width="200" height="10" fill={WOOD} />
+      <path d="M0 24H200" stroke={INK} strokeWidth="2" />
+      <HerbBundle x={14} len={40} fill={FOREST} leaf="#4f6e45" />
+      <HerbBundle x={36} len={30} fill={lavender} leaf="#8c7aa8" />
+      <HerbBundle x={164} len={36} fill="#5e6b2e" leaf="#7d8a45" />
+      <HerbBundle x={186} len={44} fill={FOREST} leaf="#4f6e45" />
+      <circle cx="33" cy="64" r="1.6" fill="#a99bc4" />
+      <circle cx="38" cy="60" r="1.6" fill="#a99bc4" />
+      {/* table */}
+      <rect y="206" width="200" height="12" fill={WOOD2} />
+      <rect y="218" width="200" height="62" fill={WOOD} />
+      <path d="M0 206H200M0 218H200" stroke={INK} strokeWidth="2" />
+      <path d="M0 238H200M0 260H200M40 218V238M110 238V260M160 218V238M70 260V280" stroke="#4a3120" strokeWidth="2" />
+      {/* bottles, left */}
+      <rect x="32" y="172" width="8" height="12" fill="#6f8bb3" />
+      <rect x="31" y="167" width="10" height="6" fill={WOOD2} />
+      <circle cx="36" cy="194" r="12" fill="#3d5f8f" />
+      <path d="M25 198A12 12 0 0 0 47 198Z" fill="#2a4466" />
+      <path d="M30 188C31 185 33 184 35 183" stroke={PARCH} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      <rect x="52" y="176" width="12" height="30" rx="2" fill="#4f6e45" />
+      <rect x="55" y="166" width="6" height="11" fill="#4f6e45" />
+      <rect x="54" y="162" width="8" height="5" fill={WOOD2} />
+      <path d="M52 186H64" stroke={PARCH3} strokeWidth="1.2" />
+      <rect x="54" y="190" width="8" height="8" fill={PARCH2} />
+      {/* mortar and pestle */}
+      <path d="M102 188L128 150" stroke={PARCH2} strokeWidth="8" strokeLinecap="round" />
+      <path d="M102 188L114 170" stroke={PARCH3} strokeWidth="10" strokeLinecap="round" />
+      <path d="M70 186H122C122 202 112 212 96 212C80 212 70 202 70 186Z" fill={PARCH3} />
+      <path d="M76 194C80 204 88 208 96 208" stroke="#7d6b4b" strokeWidth="2" fill="none" />
+      <ellipse cx="96" cy="186" rx="26" ry="5" fill={PARCH2} />
+      <ellipse cx="96" cy="186" rx="20" ry="3" fill={FOREST} />
+      <path d="M102 186L106 180" stroke={PARCH3} strokeWidth="9" strokeLinecap="round" />
+      {/* bottles, right */}
+      <path d="M138 206V190L142 184V178H146V184L150 190V206Z" fill={BLOOD} />
+      <rect x="141" y="174" width="6" height="5" fill={WOOD2} />
+      <rect x="156" y="182" width="16" height="24" fill="#8a6a2a" />
+      <rect x="156" y="190" width="16" height="16" fill={GOLD} />
+      <rect x="160" y="176" width="8" height="7" fill="#8a6a2a" />
+      <rect x="159" y="172" width="10" height="5" fill={WOOD2} />
+      <path d="M176 206V194C176 190 196 190 196 194V206Z" fill={PARCH3} />
+      <path d="M175 194C178 186 194 186 197 194Z" fill={PARCH2} />
+      <path d="M176 192H196" stroke={BLOOD} strokeWidth="1.6" />
+      {/* loose leaves */}
+      <ellipse cx="66" cy="212" rx="5" ry="2" fill={FOREST} transform="rotate(-20 66 212)" />
+      <ellipse cx="128" cy="211" rx="5" ry="2" fill="#4f6e45" transform="rotate(25 128 211)" />
+      <ellipse cx="136" cy="213" rx="4" ry="1.6" fill={FOREST} transform="rotate(-10 136 213)" />
+    </g>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Messenger: raven bearing a scroll across the moon; a sealed letter  */
+/* ------------------------------------------------------------------ */
+
+function Messenger({ u }: { u: string }) {
+  return (
+    <g>
+      <Sky u={u} />
+      <Stars pts={[[20, 24], [182, 28, 2.5], [24, 178, 2], [178, 176, 2], [170, 120, 2]]} />
+      <FullMoon cx={104} cy={102} r={60} />
+      <Village y={244} fill={INK2} />
+      {/* raven, far wing */}
+      <path
+        d="M104 104C120 92 142 84 170 84C162 90 164 94 172 96C160 100 162 106 168 110C150 112 128 112 110 112Z"
+        fill={INK2}
+      />
+      {/* body */}
+      <path
+        d="M70 104C80 96 98 94 116 98C128 100 138 106 146 112L162 110L154 118L164 122L146 122C134 124 118 124 104 120C92 118 80 114 70 104Z"
+        fill={INK}
+      />
+      {/* near wing, raised */}
+      <path
+        d="M90 102C88 80 98 58 118 38C120 50 126 56 136 54C130 64 134 72 144 72C134 84 124 94 114 102Z"
+        fill={INK}
+      />
+      <path d="M100 96C102 80 110 64 120 52M108 98C114 86 122 76 132 66" stroke={INK3} strokeWidth="1.6" fill="none" />
+      {/* head and beak */}
+      <circle cx="72" cy="101" r="9" fill={INK} />
+      <path d="M64 98L48 103L64 107Z" fill={INK} />
+      <path d="M62 102L50 103" stroke={INK3} strokeWidth="1" />
+      <circle cx="70" cy="98" r="1.6" fill={PARCH} />
+      {/* talons and scroll */}
+      <path d="M98 120L96 130M108 120L108 130" stroke={INK} strokeWidth="2.5" strokeLinecap="round" />
+      <rect x="82" y="128" width="40" height="10" fill={PARCH} />
+      <ellipse cx="82" cy="133" rx="3" ry="5" fill={PARCH2} />
+      <ellipse cx="122" cy="133" rx="3" ry="5" fill={PARCH2} />
+      <path d="M86 131H118M86 135H112" stroke={PARCH3} strokeWidth="1" />
+      <path d="M100 128V138" stroke={BLOOD} strokeWidth="3" />
+      <path d="M100 138L96 148M100 138L105 147" stroke={BLOOD} strokeWidth="2" strokeLinecap="round" />
+      {/* stone windowsill */}
+      <rect y="240" width="200" height="40" fill={PARCH3} />
+      <path d="M0 240H200" stroke="#7d6b4b" strokeWidth="3" />
+      <path d="M0 252H200M30 252V280M90 240V252M130 252V280M170 240V252" stroke="#7d6b4b" strokeWidth="1.6" />
+      {/* sealed letter */}
+      <path d="M36 254L104 246L112 268L46 276Z" fill={PARCH} />
+      <path d="M36 254L76 264L104 246" stroke={PARCH3} strokeWidth="1.5" fill="none" />
+      <path d="M36 254L104 246L112 268L46 276Z" fill="none" stroke="#7d6b4b" strokeWidth="1.2" />
+      <circle cx="76" cy="264" r="7.5" fill={BLOOD} />
+      <path d="M70 268l-3 4M82 268l3 3" stroke={BLOOD} strokeWidth="2" strokeLinecap="round" />
+      <path d={starPath(76, 264, 4)} fill="#6b1f16" />
+      {/* inkpot and quill */}
+      <path d="M150 272H174L171 254H153Z" fill={INK} />
+      <ellipse cx="162" cy="254" rx="9" ry="3" fill={INK3} />
+      <path d="M160 254C166 228 176 206 192 186C194 204 186 226 164 250Z" fill={PARCH2} />
+      <path d="M160 256C168 232 178 210 192 186" stroke={PARCH3} strokeWidth="1.4" fill="none" />
+      <path d="M170 230l8 -2M174 218l8 -3M180 206l6 -3M168 240l6 0" stroke={PARCH3} strokeWidth="1" />
     </g>
   );
 }

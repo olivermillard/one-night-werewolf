@@ -1,5 +1,5 @@
 import { NightTimeline } from "@/components/game/NightTimeline";
-import { Button, Columns, SectionHeading, Title } from "@/components/game/ui";
+import { Button, Columns, Panel, SectionHeading, Title } from "@/components/game/ui";
 import type { GameView } from "@/lib/view";
 import { useEffect, useState } from "react";
 
@@ -36,6 +36,17 @@ export function DayScreen({
               <p className="mb-6 text-center font-[family-name:var(--font-display)] text-7xl tabular-nums text-gold [text-shadow:0_0_30px_#a87a3266]">
                 {minutes}:{seconds}
               </p>
+              {(view.private.messages ?? []).map((text, index) => (
+                <Panel key={index} className="mb-5 text-center">
+                  <p className="small-caps text-sm tracking-[0.2em] text-gold">
+                    A note was left for you in the night
+                  </p>
+                  <p className="mt-2 font-[family-name:var(--font-display)] text-2xl leading-snug text-[#f3e6c8]">
+                    &ldquo;{text}&rdquo;
+                  </p>
+                  <p className="mt-1 text-sm text-muted">Unsigned. It may not be true.</p>
+                </Panel>
+              ))}
               {view.room.houseRules.allWerewolvesMustDie ? (
                 <p className="small-caps mb-4 text-center text-sm tracking-[0.15em] text-gold">
                   House rule: every Werewolf must die

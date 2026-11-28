@@ -10,10 +10,10 @@ import {
 import { ROLES } from "./types";
 
 describe("deck", () => {
-  it("contains 16 base-game cards", () => {
-    expect(ALL_ROLE_CARDS).toHaveLength(16);
+  it("contains 16 base-game cards plus 4 custom ones", () => {
+    expect(ALL_ROLE_CARDS).toHaveLength(20);
     const total = ROLES.reduce((sum, role) => sum + ROLE_COPIES[role], 0);
-    expect(total).toBe(16);
+    expect(total).toBe(20);
   });
 
   it("requires player count + 3 cards", () => {

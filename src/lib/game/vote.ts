@@ -4,6 +4,7 @@ import type {
   HouseRules,
   Player,
   PlayerId,
+  PoacherMarks,
   Role,
   WinResult,
 } from "./types";
@@ -207,6 +208,7 @@ export function resolveVotes(args: {
   votes: Votes;
   houseRules?: HouseRules;
   runoff?: Runoff;
+  marks?: PoacherMarks;
 }): VoteResolution {
   const tally = tallyVotes(args.players, args.votes);
   const votedDown = initialDeathsFromVotes(args.players, args.votes, args.runoff);
@@ -223,6 +225,7 @@ export function resolveVotes(args: {
     doppelgangerCopy: args.doppelgangerCopy,
     deaths,
     houseRules: args.houseRules,
+    marks: args.marks,
   });
   return { tally, deaths, winners };
 }

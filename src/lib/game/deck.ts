@@ -154,14 +154,24 @@ export function validateDeck(deck: Role[], playerCount: number): string[] {
     }
   }
   if (counts.mason === 1) {
-    errors.push("Masons should be included as a pair.");
+    errors.push(MASON_PAIR_WARNING);
+  }
+  if (counts.mad_seer > 0 && counts.seer === 0) {
+    errors.push(MAD_SEER_WARNING);
   }
   return errors;
 }
 
+export const MASON_PAIR_WARNING = "Masons should be included as a pair.";
+export const MAD_SEER_WARNING =
+  "The Mad Seer is meant to be played with a Seer. Without one, whoever sees a Seer card can tell they're mad.";
+
+/** Advice the host may ignore: these never block the deal. */
+export const SOFT_DECK_WARNINGS = [MASON_PAIR_WARNING, MAD_SEER_WARNING];
+
 export function hardValidateDeck(deck: Role[], playerCount: number): string[] {
   return validateDeck(deck, playerCount).filter(
-    (error) => error !== "Masons should be included as a pair.",
+    (error) => !SOFT_DECK_WARNINGS.includes(error),
   );
 }
 

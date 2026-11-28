@@ -3,6 +3,7 @@ import { Moon, moonForStep } from "@/components/game/Moon";
 import { Button, Title } from "@/components/game/ui";
 import {
   CENTER_LABELS,
+  MESSAGE_MAX_LENGTH,
   assertNever,
   type NightAction,
   type NightPrompt,
@@ -78,6 +79,7 @@ function NightPromptForm({
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [center, setCenter] = useState<number[]>([]);
+  const [note, setNote] = useState("");
   const named = (id: string) =>
     players.find((player) => player.id === id)?.name ?? id;
 
@@ -209,6 +211,77 @@ function NightPromptForm({
           disabled={selected.length !== 2}
         />
       );
+    case "herbalist":
+      return (
+        <div className="space-y-4">
+          <p className="text-center text-muted">Pick one player and one center card.</p>
+          <Chooser
+            players={prompt.playerIds.map((id) => ({ id, name: named(id) }))}
+            selected={selected}
+            onToggle={(id) => setSelected([id])}
+          />
+          <CenterChooser
+            selected={center}
+            max={1}
+            onToggle={(index) => setCenter([index])}
+          />
+          <Button
+            disabled={!selected[0] || center[0] === undefined}
+            onClick={() => {
+              const target = selected[0];
+              const index = center[0];
+              if (!target || index === undefined) return;
+              onAction({ kind: "herbalist", targetPlayerId: target, centerIndex: index });
+            }}
+          >
+            Swap unseen
+          </Button>
+          <Button variant="ghost" onClick={() => onAction({ kind: "herbalist_skip" })}>
+            Skip
+          </Button>
+        </div>
+      );
+    case "messenger": {
+      const trimmed = note.trim();
+      return (
+        <div className="space-y-4">
+          <Chooser
+            players={prompt.playerIds.map((id) => ({ id, name: named(id) }))}
+            selected={selected}
+            onToggle={(id) => setSelected([id])}
+          />
+          <label className="block">
+            <span className="small-caps mb-2 block text-center text-sm tracking-[0.2em] text-muted">
+              Your note · unsigned
+            </span>
+            <textarea
+              value={note}
+              maxLength={MESSAGE_MAX_LENGTH}
+              rows={3}
+              onChange={(event) => setNote(event.target.value.replace(/\n/g, " "))}
+              placeholder="Trust no one who claims the Robber…"
+              className="w-full resize-none rounded-lg border border-line bg-panel/80 px-4 py-3 text-lg text-[#f3e6c8] placeholder:text-muted/60 focus:border-gold focus:outline-none"
+            />
+            <span className="mt-1 block text-right text-sm text-muted">
+              {note.length}/{MESSAGE_MAX_LENGTH}
+            </span>
+          </label>
+          <Button
+            disabled={!selected[0] || !trimmed}
+            onClick={() => {
+              const target = selected[0];
+              if (!target || !trimmed) return;
+              onAction({ kind: "messenger", targetPlayerId: target, text: trimmed });
+            }}
+          >
+            {selected[0] ? `Send to ${named(selected[0])}` : "Pick who gets it"}
+          </Button>
+          <Button variant="ghost" onClick={() => onAction({ kind: "messenger_skip" })}>
+            Skip
+          </Button>
+        </div>
+      );
+    }
     case "drunk":
     case "werewolf_lone":
       return (

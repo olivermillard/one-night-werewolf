@@ -5,6 +5,7 @@ import {
   type HouseRules,
   type Player,
   type PlayerId,
+  type PoacherMarks,
   type Role,
   type WinResult,
 } from "./types";
@@ -61,6 +62,7 @@ export function resolveWins(args: {
   doppelgangerCopy: Role | null;
   deaths: PlayerId[];
   houseRules?: HouseRules;
+  marks?: PoacherMarks;
 }): WinResult {
   const { players, current, doppelgangerCopy, deaths } = args;
   const { allWerewolvesMustDie } = args.houseRules ?? DEFAULT_HOUSE_RULES;
@@ -135,5 +137,41 @@ export function resolveWins(args: {
     }
   }
 
-  return { village, werewolf, tanner, reasons };
+  // The Poacher is its own side: it wins alongside whoever else wins.
+  const poacher = poacherWins({ ...args, marks: args.marks ?? {} });
+  if (poacher.length) {
+    reasons.push(
+      poacher.length === 1
+        ? "The Poacher's mark died, so the Poacher wins."
+        : "Both Poachers' marks died, so the Poachers win.",
+    );
+  }
+
+  return { village, werewolf, tanner, poacher: poacher.length > 0, reasons };
+}
+
+/**
+ * Players who win as a Poacher. The mark goes with the card: whoever holds the
+ * Poacher card at the end (or the Doppelgänger card, if it copied the Poacher)
+ * wins if that card's mark died.
+ */
+export function poacherWins(args: {
+  players: Player[];
+  current: CardPositions;
+  doppelgangerCopy: Role | null;
+  deaths: PlayerId[];
+  marks: PoacherMarks;
+}): PlayerId[] {
+  const winners: PlayerId[] = [];
+  for (const player of args.players) {
+    const card = args.current.players[player.id];
+    const mark =
+      card === "poacher"
+        ? args.marks.poacher
+        : card === "doppelganger" && args.doppelgangerCopy === "poacher"
+          ? args.marks.doppelganger
+          : undefined;
+    if (mark && args.deaths.includes(mark)) winners.push(player.id);
+  }
+  return winners;
 }

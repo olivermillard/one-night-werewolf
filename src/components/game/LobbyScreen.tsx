@@ -4,6 +4,9 @@ import {
   ROLE_COPIES,
   ROLE_INFO,
   ROLES,
+  SOFT_DECK_WARNINGS,
+  isCustomRole,
+  validateDeck,
   countRoles,
   hardValidateDeck,
   recommendedDeck,
@@ -106,6 +109,51 @@ export function LobbyScreen({
   const rolesInWakeOrder = [...ROLES].sort(
     (a, b) => (ROLE_INFO[a].nightOrder ?? 99) - (ROLE_INFO[b].nightOrder ?? 99),
   );
+  const classicRoles = rolesInWakeOrder.filter((role) => !isCustomRole(role));
+  const customRoles = rolesInWakeOrder.filter(isCustomRole);
+  // Advice like "Masons come in pairs": shown, but never blocks the deal.
+  const softWarnings = validateDeck(deck, Math.max(playerCount, 3)).filter((warning) =>
+    SOFT_DECK_WARNINGS.includes(warning),
+  );
+
+  function renderRoleCard(role: Role) {
+              const used = counts[role];
+              return (
+                <div key={role} className="relative">
+                  <button
+                    type="button"
+                    disabled={!view.me.isHost}
+                    onClick={() => cycle(role)}
+                    aria-label={`${ROLE_INFO[role].name}: ${used} of ${ROLE_COPIES[role]} in play. Tap to add one.`}
+                    className={`relative block w-full text-left transition-[opacity,filter,transform] duration-150 active:scale-[0.97] disabled:active:scale-100 ${
+                      used ? "" : "opacity-45 grayscale-[60%]"
+                    }`}
+                  >
+                    <MiniRole role={role} />
+                    <span
+                      className={`absolute right-1 top-1 min-w-7 rounded-full border px-1.5 text-center font-[family-name:var(--font-display)] text-sm ${
+                        used
+                          ? "border-[#f0d89a] bg-gold text-[#1c120a]"
+                          : "border-line bg-panel text-muted"
+                      }`}
+                    >
+                      {used}/{ROLE_COPIES[role]}
+                    </span>
+                  </button>
+                  {/* Roles with several copies get a − so you can step back down. */}
+                  {view.me.isHost && ROLE_COPIES[role] > 1 && used > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => removeOne(role)}
+                      aria-label={`Remove one ${ROLE_INFO[role].name}`}
+                      className="absolute left-1 top-1 flex h-7 w-7 items-center justify-center rounded-full border border-[#f0d89a] bg-[#120d0a]/90 text-lg leading-none text-gold active:scale-95"
+                    >
+                      −
+                    </button>
+                  ) : null}
+                </div>
+              );
+  }
 
   // Shown in the left column on desktop, after the deck on phones.
   const hostSettings = (
@@ -269,45 +317,20 @@ export function LobbyScreen({
             </p>
           ) : null}
           <div className="grid grid-cols-3 gap-3 lg:grid-cols-4">
-            {rolesInWakeOrder.map((role) => {
-              const used = counts[role];
-              return (
-                <div key={role} className="relative">
-                  <button
-                    type="button"
-                    disabled={!view.me.isHost}
-                    onClick={() => cycle(role)}
-                    aria-label={`${ROLE_INFO[role].name}: ${used} of ${ROLE_COPIES[role]} in play. Tap to add one.`}
-                    className={`relative block w-full text-left transition-[opacity,filter,transform] duration-150 active:scale-[0.97] disabled:active:scale-100 ${
-                      used ? "" : "opacity-45 grayscale-[60%]"
-                    }`}
-                  >
-                    <MiniRole role={role} />
-                    <span
-                      className={`absolute right-1 top-1 min-w-7 rounded-full border px-1.5 text-center font-[family-name:var(--font-display)] text-sm ${
-                        used
-                          ? "border-[#f0d89a] bg-gold text-[#1c120a]"
-                          : "border-line bg-panel text-muted"
-                      }`}
-                    >
-                      {used}/{ROLE_COPIES[role]}
-                    </span>
-                  </button>
-                  {/* Roles with several copies get a − so you can step back down. */}
-                  {view.me.isHost && ROLE_COPIES[role] > 1 && used > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => removeOne(role)}
-                      aria-label={`Remove one ${ROLE_INFO[role].name}`}
-                      className="absolute left-1 top-1 flex h-7 w-7 items-center justify-center rounded-full border border-[#f0d89a] bg-[#120d0a]/90 text-lg leading-none text-gold active:scale-95"
-                    >
-                      −
-                    </button>
-                  ) : null}
-                </div>
-              );
-            })}
+            {classicRoles.map(renderRoleCard)}
           </div>
+          <SectionHeading>Custom cards</SectionHeading>
+          <p className="-mt-1 mb-3 text-center text-sm text-muted">
+            Made for this game, not part of the classic set. They work only because everyone has a phone.
+          </p>
+          <div className="grid grid-cols-3 gap-3 lg:grid-cols-4">
+            {customRoles.map(renderRoleCard)}
+          </div>
+          {softWarnings.map((warning) => (
+            <p key={warning} className="mt-4 text-center text-sm text-gold">
+              {warning}
+            </p>
+          ))}
 
             <div className="flex flex-col lg:hidden">{hostSettings}</div>
           {view.me.isHost ? (

@@ -1,11 +1,14 @@
-import { displayName, isImmediateCopyRole } from "./roles";
+import type { Rng } from "./deal";
+import { disguise, displayName, isImmediateCopyRole } from "./roles";
 import {
   playerName,
   swapPlayerWithCenter,
   swapPlayers,
 } from "./positions";
 import {
+  MESSAGE_MAX_LENGTH,
   NIGHT_STEPS,
+  ROLES,
   assertNever,
   type FlashReveal,
   type GameState,
@@ -46,14 +49,21 @@ export function isStepInGame(state: GameState, step: NightStep): boolean {
       return has("minion");
     case "masons":
       return has("mason");
+    case "poacher":
+      return has("poacher");
     case "seer":
-      return has("seer");
+      // The Mad Seer wakes with the Seer, so it never has a call of its own.
+      return has("seer") || has("mad_seer");
     case "robber":
       return has("robber");
     case "troublemaker":
       return has("troublemaker");
+    case "herbalist":
+      return has("herbalist");
     case "drunk":
       return has("drunk");
+    case "messenger":
+      return has("messenger");
     case "insomniac":
       return has("insomniac");
     case "doppelganger_insomniac":
@@ -87,14 +97,23 @@ export function actorsFor(state: GameState, step: NightStep): PlayerId[] {
       if (dg && copy === "mason") ids.push(dg);
       return unique(ids);
     }
+    case "poacher":
+      return originalHolders(state, "poacher");
     case "seer":
-      return originalHolders(state, "seer");
+      return [
+        ...originalHolders(state, "seer"),
+        ...originalHolders(state, "mad_seer"),
+      ];
     case "robber":
       return originalHolders(state, "robber");
     case "troublemaker":
       return originalHolders(state, "troublemaker");
+    case "herbalist":
+      return originalHolders(state, "herbalist");
     case "drunk":
       return originalHolders(state, "drunk");
+    case "messenger":
+      return originalHolders(state, "messenger");
     case "insomniac":
       return originalHolders(state, "insomniac");
     case "doppelganger_insomniac":
@@ -131,10 +150,13 @@ export const NIGHT_STEP_INFO: Record<
   werewolves: { label: "Werewolves", role: "werewolf" },
   minion: { label: "Minion", role: "minion" },
   masons: { label: "Masons", role: "mason" },
+  poacher: { label: "Poacher", role: "poacher" },
   seer: { label: "Seer", role: "seer" },
   robber: { label: "Robber", role: "robber" },
   troublemaker: { label: "Troublemaker", role: "troublemaker" },
+  herbalist: { label: "Herbalist", role: "herbalist" },
   drunk: { label: "Drunk", role: "drunk" },
+  messenger: { label: "Messenger", role: "messenger" },
   insomniac: { label: "Insomniac", role: "insomniac" },
   doppelganger_insomniac: {
     label: "Doppelgänger-Insomniac",
@@ -183,9 +205,17 @@ export function enterStep(state: GameState, step: NightStep): GameState {
   };
 }
 
-export function beginNight(state: GameState): GameState {
+export function beginNight(state: GameState, rng: Rng = Math.random): GameState {
+  // The Poacher card's mark is fixed at nightfall: a random other player.
+  const poacher = originalHolders(state, "poacher")[0];
+  const marks = { ...state.marks };
+  if (poacher && !marks.poacher) {
+    marks.poacher = pickOther(state, poacher, rng) ?? undefined;
+  }
   const cleared: GameState = {
     ...state,
+    marks,
+    messages: state.messages ?? [],
     flashes: {},
     acknowledgedIds: [],
     pendingActorIds: [],
@@ -278,28 +308,34 @@ export function getPrompt(
         { seenPlayerIds: masons },
       );
     }
+    case "poacher":
+      return poacherPrompt(state, state.marks?.poacher, false);
     case "seer":
       return seerPrompt(others, false);
     case "robber":
       return robberPrompt(others, false);
     case "troublemaker":
       return troublemakerPrompt(others, false);
+    case "herbalist":
+      return herbalistPrompt(others, false);
     case "drunk":
       return drunkPrompt(false);
+    case "messenger":
+      return messengerPrompt(others, false);
     case "insomniac": {
-      const card = state.current.players[playerId];
+      const card = shownCard(state.current.players[playerId]);
       return acknowledgePrompt(
         "Insomniac",
         "Look at your card to see if it changed.",
-        { ownRole: card ?? null, seenRoles: card ? [card] : [] },
+        { ownRole: card, seenRoles: card ? [card] : [] },
       );
     }
     case "doppelganger_insomniac": {
-      const card = state.current.players[playerId];
+      const card = shownCard(state.current.players[playerId]);
       return acknowledgePrompt(
         "Doppelgänger-Insomniac",
         "You viewed the Insomniac. Look at your card to see if it changed.",
-        { ownRole: card ?? null, seenRoles: card ? [card] : [] },
+        { ownRole: card, seenRoles: card ? [card] : [] },
       );
     }
     case "complete":
@@ -315,15 +351,66 @@ function promptForCopiedAction(
   others: PlayerId[],
 ): NightPrompt {
   const copy = state.doppelgangerCopy;
-  if (copy === "seer") return seerPrompt(others, true);
+  if (copy === "seer" || copy === "mad_seer") return seerPrompt(others, true);
   if (copy === "robber") return robberPrompt(others, true);
   if (copy === "troublemaker") return troublemakerPrompt(others, true);
   if (copy === "drunk") return drunkPrompt(true);
+  if (copy === "herbalist") return herbalistPrompt(others, true);
+  if (copy === "messenger") return messengerPrompt(others, true);
+  if (copy === "poacher") {
+    return poacherPrompt(state, state.marks?.doppelganger, true);
+  }
+  const shown = copy ? disguise(copy) : null;
   return acknowledgePrompt(
     "Doppelgänger",
-    `You are now the ${copy ? displayName(copy) : "copied role"}.`,
-    { ownRole: copy, seenRoles: copy ? [copy] : [] },
+    `You are now the ${shown ? displayName(shown) : "copied role"}.`,
+    { ownRole: shown, seenRoles: shown ? [shown] : [] },
   );
+}
+
+function poacherPrompt(
+  state: GameState,
+  mark: PlayerId | undefined,
+  asDoppelganger: boolean,
+): NightPrompt {
+  return acknowledgePrompt(
+    asDoppelganger ? "Doppelgänger-Poacher" : "Poacher",
+    mark
+      ? `Your mark is ${nameOf(state, mark)}. You win if they die.`
+      : "There is no one for you to hunt tonight.",
+    { seenPlayerIds: mark ? [mark] : [], ownRole: "poacher" },
+  );
+}
+
+function herbalistPrompt(others: PlayerId[], asDoppelganger: boolean): NightPrompt {
+  return {
+    kind: "herbalist",
+    title: asDoppelganger ? "Doppelgänger-Herbalist" : "Herbalist",
+    instruction:
+      "You may swap another player’s card with a center card. Neither of you looks.",
+    playerIds: others,
+    centerCount: 1,
+    canSkip: true,
+    seenPlayerIds: [],
+    seenRoles: [],
+    seenCenter: [],
+    ownRole: "herbalist",
+  };
+}
+
+function messengerPrompt(others: PlayerId[], asDoppelganger: boolean): NightPrompt {
+  return {
+    kind: "messenger",
+    title: asDoppelganger ? "Doppelgänger-Messenger" : "Messenger",
+    instruction: `You may send one anonymous note (up to ${MESSAGE_MAX_LENGTH} characters) to another player. It reaches them at dawn.`,
+    playerIds: others,
+    centerCount: 0,
+    canSkip: true,
+    seenPlayerIds: [],
+    seenRoles: [],
+    seenCenter: [],
+    ownRole: "messenger",
+  };
 }
 
 function seerPrompt(others: PlayerId[], asDoppelganger: boolean): NightPrompt {
@@ -414,6 +501,7 @@ export function applyNightAction(
   state: GameState,
   playerId: PlayerId,
   action: NightAction,
+  rng: Rng = Math.random,
 ): GameState {
   if (state.nightStep === "complete") {
     throw new Error("Night is already complete.");
@@ -428,10 +516,13 @@ export function applyNightAction(
   const step = state.nightStep;
   switch (step) {
     case "doppelganger_copy":
-      return finishStep(applyDoppelgangerCopy(state, playerId, action), playerId);
+      return finishStep(
+        applyDoppelgangerCopy(state, playerId, action, rng),
+        playerId,
+      );
     case "doppelganger_action":
       return finishStep(
-        applyCopiedImmediate(state, playerId, action),
+        applyCopiedImmediate(state, playerId, action, rng),
         playerId,
       );
     case "doppelganger_minion":
@@ -448,8 +539,17 @@ export function applyNightAction(
       );
     case "masons":
       return finishStep(applyMasonAck(state, playerId, action), playerId);
+    case "poacher":
+      return finishStep(applyPoacher(state, playerId, action, false), playerId);
     case "seer":
-      return finishStep(applySeer(state, playerId, action, false), playerId);
+      return finishStep(
+        applySeer(state, playerId, action, {
+          asDoppelganger: false,
+          mad: state.original.players[playerId] === "mad_seer",
+          rng,
+        }),
+        playerId,
+      );
     case "robber":
       return finishStep(applyRobber(state, playerId, action, false), playerId);
     case "troublemaker":
@@ -457,8 +557,12 @@ export function applyNightAction(
         applyTroublemaker(state, playerId, action, false),
         playerId,
       );
+    case "herbalist":
+      return finishStep(applyHerbalist(state, playerId, action, false), playerId);
     case "drunk":
       return finishStep(applyDrunk(state, playerId, action, false), playerId);
+    case "messenger":
+      return finishStep(applyMessenger(state, playerId, action, false), playerId);
     case "insomniac":
       return finishStep(applyInsomniac(state, playerId, action, false), playerId);
     case "doppelganger_insomniac":
@@ -482,6 +586,7 @@ function applyDoppelgangerCopy(
   state: GameState,
   playerId: PlayerId,
   action: NightAction,
+  rng: Rng,
 ): GameState {
   if (action.kind !== "doppelganger_copy") {
     throw new Error("Doppelgänger must look at another player’s card.");
@@ -492,15 +597,22 @@ function applyDoppelgangerCopy(
   const viewed = state.current.players[action.targetPlayerId];
   if (!viewed) throw new Error("Unknown target.");
   const targetName = playerName(state.players, action.targetPlayerId);
+  // A copied Mad Seer looks like a Seer, so the Doppelgänger is fooled too.
+  const shown = disguise(viewed);
   const flash: FlashReveal = {
-    title: "You are now the " + displayName(viewed),
+    title: "You are now the " + displayName(shown),
     body: `You looked at ${targetName}’s card.`,
-    roles: [viewed],
+    roles: [shown],
     playerIds: [action.targetPlayerId],
     centerIndexes: [],
   };
+  const marks =
+    viewed === "poacher"
+      ? { ...state.marks, doppelganger: pickOther(state, playerId, rng) ?? undefined }
+      : state.marks;
   return {
     ...state,
+    marks,
     doppelgangerCopy: viewed,
     flashes: { ...state.flashes, [playerId]: flash },
     nightLog: [
@@ -508,7 +620,7 @@ function applyDoppelgangerCopy(
       log(
         state.nightStep,
         [playerId],
-        `${nameOf(state, playerId)} (Doppelgänger) looked at ${targetName}’s card and became the ${displayName(viewed)}.`,
+        `${nameOf(state, playerId)} (Doppelgänger) looked at ${targetName}’s card and became the ${seenAs(viewed)}.`,
       ),
     ],
   };
@@ -518,14 +630,24 @@ function applyCopiedImmediate(
   state: GameState,
   playerId: PlayerId,
   action: NightAction,
+  rng: Rng,
 ): GameState {
   const copy = state.doppelgangerCopy;
-  if (copy === "seer") return applySeer(state, playerId, action, true);
+  if (copy === "seer" || copy === "mad_seer") {
+    return applySeer(state, playerId, action, {
+      asDoppelganger: true,
+      mad: copy === "mad_seer",
+      rng,
+    });
+  }
   if (copy === "robber") return applyRobber(state, playerId, action, true);
   if (copy === "troublemaker") {
     return applyTroublemaker(state, playerId, action, true);
   }
   if (copy === "drunk") return applyDrunk(state, playerId, action, true);
+  if (copy === "herbalist") return applyHerbalist(state, playerId, action, true);
+  if (copy === "messenger") return applyMessenger(state, playerId, action, true);
+  if (copy === "poacher") return applyPoacher(state, playerId, action, true);
   throw new Error("Doppelgänger has no immediate action.");
 }
 
@@ -550,14 +672,15 @@ function applyWerewolf(
       throw new Error("Lone Wolf must pick a center card or skip.");
     }
     const role = centerRole(state, action.centerIndex);
+    const shown = disguise(role);
     return {
       ...state,
       flashes: {
         ...state.flashes,
         [playerId]: {
           title: "Center card",
-          body: `The ${CENTER_LABELS[action.centerIndex]} card is the ${displayName(role)}.`,
-          roles: [role],
+          body: `The ${CENTER_LABELS[action.centerIndex]} card is the ${displayName(shown)}.`,
+          roles: [shown],
           playerIds: [],
           centerIndexes: [action.centerIndex],
         },
@@ -567,7 +690,7 @@ function applyWerewolf(
         log(
           state.nightStep,
           [playerId],
-          `${nameOf(state, playerId)} (lone Werewolf) looked at the ${CENTER_LABELS[action.centerIndex]} center card: ${displayName(role)}.`,
+          `${nameOf(state, playerId)} (lone Werewolf) looked at the ${CENTER_LABELS[action.centerIndex]} center card: ${seenAs(role)}.`,
         ),
       ],
     };
@@ -605,9 +728,16 @@ function applySeer(
   state: GameState,
   playerId: PlayerId,
   action: NightAction,
-  asDoppelganger: boolean,
+  opts: { asDoppelganger: boolean; mad: boolean; rng: Rng },
 ): GameState {
-  const actor = label(state, playerId, asDoppelganger ? "Doppelgänger-Seer" : "Seer");
+  const title = opts.mad
+    ? opts.asDoppelganger
+      ? "Doppelgänger-Mad Seer"
+      : "Mad Seer"
+    : opts.asDoppelganger
+      ? "Doppelgänger-Seer"
+      : "Seer";
+  const actor = label(state, playerId, title);
   if (action.kind === "seer_skip" || action.kind === "acknowledge") {
     return withLog(state, log(state.nightStep, [playerId], `${actor} looked at nothing.`));
   }
@@ -617,6 +747,9 @@ function applySeer(
     }
     const role = state.current.players[action.targetPlayerId];
     if (!role) throw new Error("Unknown target.");
+    const [shown] = opts.mad
+      ? madVisions(state, playerId, [role], opts.rng)
+      : [disguise(role)];
     const targetName = nameOf(state, action.targetPlayerId);
     return {
       ...state,
@@ -624,8 +757,8 @@ function applySeer(
         ...state.flashes,
         [playerId]: {
           title: `${targetName}’s card`,
-          body: `${targetName} has the ${displayName(role)}.`,
-          roles: [role],
+          body: `${targetName} has the ${displayName(shown!)}.`,
+          roles: [shown!],
           playerIds: [action.targetPlayerId],
           centerIndexes: [],
         },
@@ -635,7 +768,9 @@ function applySeer(
         log(
           state.nightStep,
           [playerId],
-          `${actor} looked at ${targetName}’s card: ${displayName(role)}.`,
+          opts.mad
+            ? `${actor} looked at ${targetName}’s card and was shown the ${displayName(shown!)}. It was really the ${displayName(role)}.`
+            : `${actor} looked at ${targetName}’s card: ${seenAs(role)}.`,
         ),
       ],
     };
@@ -649,14 +784,17 @@ function applySeer(
   }
   const roleA = centerRole(state, a);
   const roleB = centerRole(state, b);
+  const [shownA, shownB] = opts.mad
+    ? madVisions(state, playerId, [roleA, roleB], opts.rng)
+    : [disguise(roleA), disguise(roleB)];
   return {
     ...state,
     flashes: {
       ...state.flashes,
       [playerId]: {
         title: "Center cards",
-        body: `${CENTER_LABELS[a]} is the ${displayName(roleA)}. ${CENTER_LABELS[b]} is the ${displayName(roleB)}.`,
-        roles: [roleA, roleB],
+        body: `${CENTER_LABELS[a]} is the ${displayName(shownA!)}. ${CENTER_LABELS[b]} is the ${displayName(shownB!)}.`,
+        roles: [shownA!, shownB!],
         playerIds: [],
         centerIndexes: [a, b],
       },
@@ -666,10 +804,42 @@ function applySeer(
       log(
         state.nightStep,
         [playerId],
-        `${actor} looked at the ${CENTER_LABELS[a]} and ${CENTER_LABELS[b]} center cards: ${displayName(roleA)}, ${displayName(roleB)}.`,
+        opts.mad
+          ? `${actor} looked at the ${CENTER_LABELS[a]} and ${CENTER_LABELS[b]} center cards and was shown ${displayName(shownA!)}, ${displayName(shownB!)}. They were really ${displayName(roleA)}, ${displayName(roleB)}.`
+          : `${actor} looked at the ${CENTER_LABELS[a]} and ${CENTER_LABELS[b]} center cards: ${seenAs(roleA)}, ${seenAs(roleB)}.`,
       ),
     ],
   };
+}
+
+/**
+ * What the Mad Seer is shown: a wrong role for every card. The lies are drawn
+ * from the deck (so they're plausible), never repeat a card more often than
+ * the deck holds it, and never match what the card really looks like.
+ */
+export function madVisions(
+  state: GameState,
+  viewerId: PlayerId,
+  actual: Role[],
+  rng: Rng,
+): Role[] {
+  const pool = state.deck.map(disguise);
+  // The viewer's own card isn't out there to be seen.
+  const own = state.original.players[viewerId];
+  const ownIndex = own ? pool.indexOf(disguise(own)) : -1;
+  if (ownIndex !== -1) pool.splice(ownIndex, 1);
+  return actual.map((role) => {
+    const truth = disguise(role);
+    const options = pool.filter((item) => item !== truth);
+    const fallback = ROLES.filter(
+      (item) => item !== truth && item === disguise(item),
+    );
+    const choices = options.length ? options : fallback;
+    const lie = choices[Math.floor(rng() * choices.length)] ?? "villager";
+    const used = pool.indexOf(lie);
+    if (used !== -1) pool.splice(used, 1);
+    return lie;
+  });
 }
 
 function applyRobber(
@@ -705,8 +875,8 @@ function applyRobber(
       ...state.flashes,
       [playerId]: {
         title: "Your new card",
-        body: `You robbed ${targetName} and are now the ${displayName(stolen)}.`,
-        roles: [stolen],
+        body: `You robbed ${targetName} and are now the ${displayName(disguise(stolen))}.`,
+        roles: [disguise(stolen)],
         playerIds: [action.targetPlayerId],
         centerIndexes: [],
       },
@@ -716,7 +886,7 @@ function applyRobber(
       log(
         state.nightStep,
         [playerId],
-        `${actor} swapped with ${targetName} and became the ${displayName(stolen)}.`,
+        `${actor} swapped with ${targetName} and became the ${seenAs(stolen)}.`,
       ),
     ],
   };
@@ -815,8 +985,8 @@ function applyInsomniac(
       ...state.flashes,
       [playerId]: {
         title: "Your card",
-        body: `Your card is the ${displayName(card)}.`,
-        roles: [card],
+        body: `Your card is the ${displayName(disguise(card))}.`,
+        roles: [disguise(card)],
         playerIds: [],
         centerIndexes: [],
       },
@@ -826,10 +996,163 @@ function applyInsomniac(
       log(
         state.nightStep,
         [playerId],
-        `${actor} looked at their card: ${displayName(card)}.`,
+        `${actor} looked at their card: ${seenAs(card)}.`,
       ),
     ],
   };
+}
+
+function applyPoacher(
+  state: GameState,
+  playerId: PlayerId,
+  action: NightAction,
+  asDoppelganger: boolean,
+): GameState {
+  requireAck(action);
+  const mark = asDoppelganger ? state.marks?.doppelganger : state.marks?.poacher;
+  const actor = label(
+    state,
+    playerId,
+    asDoppelganger ? "Doppelgänger-Poacher" : "Poacher",
+  );
+  return withLog(
+    state,
+    log(
+      state.nightStep,
+      [playerId],
+      mark ? `${actor} learned their mark: ${nameOf(state, mark)}.` : `${actor} had no mark.`,
+    ),
+  );
+}
+
+function applyHerbalist(
+  state: GameState,
+  playerId: PlayerId,
+  action: NightAction,
+  asDoppelganger: boolean,
+): GameState {
+  const actor = label(
+    state,
+    playerId,
+    asDoppelganger ? "Doppelgänger-Herbalist" : "Herbalist",
+  );
+  if (action.kind === "herbalist_skip" || action.kind === "acknowledge") {
+    return withLog(
+      state,
+      log(state.nightStep, [playerId], `${actor} chose not to swap anyone.`),
+    );
+  }
+  if (action.kind !== "herbalist") {
+    throw new Error("Herbalist must pick a player and a center card, or skip.");
+  }
+  if (action.targetPlayerId === playerId) {
+    throw new Error("Herbalist cannot swap their own card.");
+  }
+  if (!state.current.players[action.targetPlayerId]) {
+    throw new Error("Unknown target.");
+  }
+  const given = centerRole(state, action.centerIndex);
+  const targetName = nameOf(state, action.targetPlayerId);
+  return {
+    ...state,
+    current: swapPlayerWithCenter(
+      state.current,
+      action.targetPlayerId,
+      action.centerIndex,
+    ),
+    nightLog: [
+      ...state.nightLog,
+      log(
+        state.nightStep,
+        [playerId],
+        `${actor} swapped ${targetName}’s card with the ${CENTER_LABELS[action.centerIndex]} center card (${targetName} is now the ${displayName(given)}, unseen).`,
+      ),
+    ],
+  };
+}
+
+/** Tidy a Messenger note: one line, no control characters, trimmed. */
+export function cleanMessage(text: unknown): string {
+  if (typeof text !== "string") return "";
+  return text
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function applyMessenger(
+  state: GameState,
+  playerId: PlayerId,
+  action: NightAction,
+  asDoppelganger: boolean,
+): GameState {
+  const actor = label(
+    state,
+    playerId,
+    asDoppelganger ? "Doppelgänger-Messenger" : "Messenger",
+  );
+  if (action.kind === "messenger_skip" || action.kind === "acknowledge") {
+    return withLog(
+      state,
+      log(state.nightStep, [playerId], `${actor} sent no message.`),
+    );
+  }
+  if (action.kind !== "messenger") {
+    throw new Error("Messenger must write a note to a player, or skip.");
+  }
+  if (action.targetPlayerId === playerId) {
+    throw new Error("Messenger cannot send a note to themselves.");
+  }
+  if (!state.current.players[action.targetPlayerId]) {
+    throw new Error("Unknown target.");
+  }
+  const text = cleanMessage(action.text);
+  if (!text) throw new Error("Write a message, or skip.");
+  if (text.length > MESSAGE_MAX_LENGTH) {
+    throw new Error(`Keep it to ${MESSAGE_MAX_LENGTH} characters.`);
+  }
+  const targetName = nameOf(state, action.targetPlayerId);
+  return {
+    ...state,
+    messages: [
+      ...(state.messages ?? []),
+      { from: playerId, to: action.targetPlayerId, text },
+    ],
+    flashes: {
+      ...state.flashes,
+      [playerId]: {
+        title: "Note sent",
+        body: `${targetName} will find it at dawn: “${text}”`,
+        roles: [],
+        playerIds: [action.targetPlayerId],
+        centerIndexes: [],
+      },
+    },
+    nightLog: [
+      ...state.nightLog,
+      log(state.nightStep, [playerId], `${actor} sent ${targetName} a note: “${text}”`),
+    ],
+  };
+}
+
+/** A random player other than `playerId`, or null if they're alone. */
+function pickOther(state: GameState, playerId: PlayerId, rng: Rng): PlayerId | null {
+  const others = state.players.filter((p) => p.id !== playerId);
+  if (others.length === 0) return null;
+  return others[Math.floor(rng() * others.length)]?.id ?? others[0]!.id;
+}
+
+/** What a player sees when they look at a card before the reveal. */
+function shownCard(card: Role | undefined): Role | null {
+  return card ? disguise(card) : null;
+}
+
+/** A role's name for the night log, noting when it looked like something else. */
+function seenAs(role: Role): string {
+  const shown = disguise(role);
+  return shown === role
+    ? displayName(role)
+    : `${displayName(role)} (it looks like the ${displayName(shown)})`;
 }
 
 function applyAcknowledgeOnly(
