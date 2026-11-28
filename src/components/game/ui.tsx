@@ -5,10 +5,47 @@ import { NIGHT_STEP_INFO } from "@/lib/game";
 import type { NightProgress, WaitingOn } from "@/lib/view";
 import { useEffect, useState, type ReactNode } from "react";
 
-export function Shell({ children }: { children: ReactNode }) {
+/**
+ * The page column. Phone-width everywhere by default; `wide` lets in-game
+ * screens use the extra room on a desktop (lg and up only, so phones are
+ * unchanged).
+ */
+export function Shell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pb-24 pt-[max(1.5rem,env(safe-area-inset-top))]">
+    <div
+      className={`mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pb-24 pt-[max(1.5rem,env(safe-area-inset-top))] ${
+        wide ? "lg:max-w-6xl lg:px-10" : ""
+      }`}
+    >
       {children}
+    </div>
+  );
+}
+
+/** Keeps a screen to a centered phone-width column on desktop. No effect on phones. */
+export function Narrow({ children }: { children: ReactNode }) {
+  return <div className="flex flex-1 flex-col lg:mx-auto lg:w-full lg:max-w-lg">{children}</div>;
+}
+
+/**
+ * Two columns on desktop, one stacked column on phones. The left column's
+ * children come first on phones, so the phone order is unchanged.
+ */
+export function Columns({
+  left,
+  right,
+  className = "",
+}: {
+  left: ReactNode;
+  right: ReactNode;
+  className?: string;
+}) {
+  return (
+    // Flex columns (not plain blocks) so phone spacing between sections is
+    // exactly what it was before these wrappers existed.
+    <div className={`flex flex-col lg:grid lg:grid-cols-2 lg:items-start lg:gap-12 ${className}`}>
+      <div className="flex min-w-0 flex-col">{left}</div>
+      <div className="flex min-w-0 flex-col">{right}</div>
     </div>
   );
 }
@@ -225,7 +262,7 @@ export function HostResetButton({ onReset }: { onReset: () => void }) {
 export function WaitingOnBanner({ waiting }: { waiting: WaitingOn }) {
   if (waiting.names.length === 0) return null;
   return (
-    <div className="mb-5 rounded-lg border border-line bg-panel/85 px-4 py-3">
+    <div className="mb-5 rounded-lg border border-line bg-panel/85 px-4 py-3 lg:mx-auto lg:w-full lg:max-w-3xl">
       <p className="small-caps text-sm tracking-[0.2em] text-gold">
         Host · waiting on {waiting.names.length} to {waiting.action}
       </p>

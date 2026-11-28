@@ -1,5 +1,5 @@
 import { NightTimeline } from "@/components/game/NightTimeline";
-import { Button, SectionHeading, Title } from "@/components/game/ui";
+import { Button, Columns, SectionHeading, Title } from "@/components/game/ui";
 import type { GameView } from "@/lib/view";
 import { useEffect, useState } from "react";
 
@@ -30,29 +30,40 @@ export function DayScreen({
   return (
     <>
       <Title kicker="Day">Find the Werewolves</Title>
-      <p className="mb-6 text-center font-[family-name:var(--font-display)] text-7xl tabular-nums text-gold [text-shadow:0_0_30px_#a87a3266]">
-        {minutes}:{seconds}
-      </p>
-      {view.room.houseRules.allWerewolvesMustDie ? (
-        <p className="small-caps mb-4 text-center text-sm tracking-[0.15em] text-gold">
-          House rule: every Werewolf must die
-        </p>
-      ) : null}
-      <p className="mb-4 text-center text-lg text-muted">
-        Your card stays face down until the reveal. It may have been swapped in the night.
-      </p>
-      {view.me.isHost ? (
-        <div className="mt-6">
-          <Button onClick={onStartVote}>Start the vote</Button>
-        </div>
-      ) : (
-        <p className="mt-8 text-center text-muted">The vote begins when the candle burns out.</p>
-      )}
-      <SectionHeading>Order of the night</SectionHeading>
-      <p className="-mt-1 mb-4 text-center text-sm text-muted">
-        Every card in the deck, in the order it is called. Three are in the center, so not every step had someone awake.
-      </p>
-      <NightTimeline deck={view.room.deck} />
+      <Columns
+        left={
+          <div className="flex flex-col lg:pt-6">
+              <p className="mb-6 text-center font-[family-name:var(--font-display)] text-7xl tabular-nums text-gold [text-shadow:0_0_30px_#a87a3266]">
+                {minutes}:{seconds}
+              </p>
+              {view.room.houseRules.allWerewolvesMustDie ? (
+                <p className="small-caps mb-4 text-center text-sm tracking-[0.15em] text-gold">
+                  House rule: every Werewolf must die
+                </p>
+              ) : null}
+              <p className="mb-4 text-center text-lg text-muted">
+                Your card stays face down until the reveal. It may have been swapped in the night.
+              </p>
+              {view.me.isHost ? (
+                <div className="mt-6">
+                  <Button onClick={onStartVote}>Start the vote</Button>
+                </div>
+              ) : (
+                <p className="mt-8 text-center text-muted">The vote begins when the candle burns out.</p>
+              )}
+          </div>
+        }
+        right={
+          // Desktop: the timeline sits beside the timer, so drop its top gap.
+          <div className="flex flex-col lg:-mt-8">
+              <SectionHeading>Order of the night</SectionHeading>
+              <p className="-mt-1 mb-4 text-center text-sm text-muted">
+                Every card in the deck, in the order it is called. Three are in the center, so not every step had someone awake.
+              </p>
+              <NightTimeline deck={view.room.deck} />
+          </div>
+        }
+      />
     </>
   );
 }

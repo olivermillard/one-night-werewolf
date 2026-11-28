@@ -1,5 +1,5 @@
 import { NightTimeline } from "@/components/game/NightTimeline";
-import { Button, Panel, SectionHeading, Title } from "@/components/game/ui";
+import { Button, Columns, Panel, SectionHeading, Title } from "@/components/game/ui";
 import { MAX_VOTES_PER_PLAYER } from "@/lib/game";
 import type { GameView } from "@/lib/view";
 import { useState } from "react";
@@ -13,19 +13,25 @@ export function VoteScreen({
 }) {
   const runoff = view.runoff;
   return (
-    <>
-      {runoff ? (
-        // Keyed so choices from the first round don't carry over.
-        <Ballot key="runoff" view={view} onVote={onVote} runoff={runoff} />
-      ) : (
-        <Ballot key="main" view={view} onVote={onVote} runoff={null} />
-      )}
-      <SectionHeading>Order of the night</SectionHeading>
-      <p className="-mt-1 mb-4 text-center text-sm text-muted">
-        Every card in the deck, in the order it is called. Three are in the center, so not every step had someone awake.
-      </p>
-      <NightTimeline deck={view.room.deck} />
-    </>
+    <Columns
+      left={
+        runoff ? (
+          // Keyed so choices from the first round don't carry over.
+          <Ballot key="runoff" view={view} onVote={onVote} runoff={runoff} />
+        ) : (
+          <Ballot key="main" view={view} onVote={onVote} runoff={null} />
+        )
+      }
+      right={
+        <div className="flex flex-col lg:pt-2">
+          <SectionHeading>Order of the night</SectionHeading>
+          <p className="-mt-1 mb-4 text-center text-sm text-muted">
+            Every card in the deck, in the order it is called. Three are in the center, so not every step had someone awake.
+          </p>
+          <NightTimeline deck={view.room.deck} />
+        </div>
+      }
+    />
   );
 }
 

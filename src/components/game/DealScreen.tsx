@@ -1,5 +1,5 @@
 import { CardBack, RoleCard } from "@/components/cards/RoleCard";
-import { Button, Title } from "@/components/game/ui";
+import { Button, Narrow, Title } from "@/components/game/ui";
 import type { GameView } from "@/lib/view";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
@@ -46,7 +46,7 @@ export function DealScreen({
   }
 
   return (
-    <>
+    <Narrow>
       <Title kicker="Look at your card">Keep it secret</Title>
       <p className="-mt-2 mb-5 text-center text-muted">
         This is your only look until dawn. Remember it.
@@ -71,7 +71,7 @@ export function DealScreen({
           </Button>
         ) : null}
       </div>
-    </>
+    </Narrow>
   );
 }
 
@@ -99,7 +99,8 @@ function PickCard({
   const [picked, setPicked] = useState<number | null>(null);
   // Cards already gone when the table first appeared don't animate.
   const [takenOnArrival] = useState(() => new Set(taken.flatMap((isTaken, i) => (isTaken ? [i] : []))));
-  const columns = taken.length <= 6 ? "grid-cols-3" : "grid-cols-4";
+  // Phones: 3 or 4 across. Desktop: a wider table (6 or 5 across).
+  const columns = taken.length <= 6 ? "grid-cols-3 lg:grid-cols-6" : "grid-cols-4 lg:grid-cols-5";
 
   // Intro: the deck is shuffled in the middle of the table, then dealt out.
   const [intro, setIntro] = useState<"shuffle" | "deal" | "done">(() =>
@@ -148,7 +149,7 @@ function PickCard({
   // The wrapper runs to the bottom of the screen and clips, so my card can
   // fall off the bottom edge without making the page scroll.
   return (
-    <div className="-mx-5 -mb-24 flex flex-1 flex-col overflow-clip px-5 pb-24">
+    <div className="-mx-5 -mb-24 flex flex-1 flex-col overflow-clip px-5 pb-24 lg:mx-auto lg:w-full lg:max-w-3xl">
       <Title kicker="The cards are dealt">
         {intro === "shuffle" ? "Shuffling…" : intro === "deal" ? "Dealing…" : "Take a card"}
       </Title>
@@ -223,7 +224,9 @@ function PickCard({
  */
 function ShufflingDeck({ count, columns }: { count: number; columns: string }) {
   // Same width as one card on the table.
-  const width = columns === "grid-cols-3" ? "w-[calc((100%-1.5rem)/3)]" : "w-[calc((100%-2.25rem)/4)]";
+  const width = columns.startsWith("grid-cols-3")
+    ? "w-[calc((100%-1.5rem)/3)] lg:w-[calc((100%-3.75rem)/6)]"
+    : "w-[calc((100%-2.25rem)/4)] lg:w-[calc((100%-3rem)/5)]";
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" aria-hidden>
       <div className={`relative ${width}`}>

@@ -1,5 +1,5 @@
 import { MiniRole } from "@/components/cards/RoleCard";
-import { Button, FanNotice, Panel, SectionHeading, Title } from "@/components/game/ui";
+import { Button, Columns, FanNotice, Panel, SectionHeading, Title } from "@/components/game/ui";
 import {
   ROLE_COPIES,
   ROLE_INFO,
@@ -107,98 +107,9 @@ export function LobbyScreen({
     (a, b) => (ROLE_INFO[a].nightOrder ?? 99) - (ROLE_INFO[b].nightOrder ?? 99),
   );
 
-  return (
+  // Shown in the left column on desktop, after the deck on phones.
+  const hostSettings = (
     <>
-      <Title kicker="The village gathers">Room {view.room.code}</Title>
-      <Panel className="text-center">
-        <p className="text-muted">Share the code or link. Everyone plays on their own phone.</p>
-        <p className="mt-2 font-[family-name:var(--font-display)] text-5xl tracking-[0.2em] text-gold">
-          {view.room.code}
-        </p>
-        <div className="mt-4">
-          <Button onClick={copyLink} variant="ghost">
-            {copied ? "Link copied" : "Copy invite link"}
-          </Button>
-        </div>
-      </Panel>
-
-      <SectionHeading>Villagers ({playerCount})</SectionHeading>
-      <ul className="space-y-2">
-        {view.room.players.map((player) => (
-          <li
-            key={player.id}
-            className="flex min-h-13 items-center justify-between rounded-lg border border-line bg-panel/80 px-4"
-          >
-            <span className="text-lg">
-              {player.name}
-              {player.isHost ? <span className="small-caps ml-2 text-sm text-gold">host</span> : null}
-              {player.id === view.me.id ? <span className="small-caps ml-2 text-sm text-muted">you</span> : null}
-            </span>
-            {view.me.isHost && !player.isHost ? (
-              <button
-                type="button"
-                className="small-caps min-h-11 px-2 text-[#e08a78]"
-                onClick={() => onKick(player.id)}
-              >
-                Remove
-              </button>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-
-      <SectionHeading>
-        Cards in play ({deck.length}/{needed})
-      </SectionHeading>
-      {view.me.isHost ? (
-        <p className="-mt-1 mb-3 text-center text-sm text-muted">
-          Tap a card to add a copy; tapping a full card clears it. Use − to remove one.{" "}
-          <button type="button" className="text-gold underline underline-offset-4" onClick={applyPreset}>
-            Use recommended
-          </button>
-        </p>
-      ) : null}
-      <div className="grid grid-cols-3 gap-3">
-        {rolesInWakeOrder.map((role) => {
-          const used = counts[role];
-          return (
-            <div key={role} className="relative">
-              <button
-                type="button"
-                disabled={!view.me.isHost}
-                onClick={() => cycle(role)}
-                aria-label={`${ROLE_INFO[role].name}: ${used} of ${ROLE_COPIES[role]} in play. Tap to add one.`}
-                className={`relative block w-full text-left transition-[opacity,filter,transform] duration-150 active:scale-[0.97] disabled:active:scale-100 ${
-                  used ? "" : "opacity-45 grayscale-[60%]"
-                }`}
-              >
-                <MiniRole role={role} />
-                <span
-                  className={`absolute right-1 top-1 min-w-7 rounded-full border px-1.5 text-center font-[family-name:var(--font-display)] text-sm ${
-                    used
-                      ? "border-[#f0d89a] bg-gold text-[#1c120a]"
-                      : "border-line bg-panel text-muted"
-                  }`}
-                >
-                  {used}/{ROLE_COPIES[role]}
-                </span>
-              </button>
-              {/* Roles with several copies get a − so you can step back down. */}
-              {view.me.isHost && ROLE_COPIES[role] > 1 && used > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => removeOne(role)}
-                  aria-label={`Remove one ${ROLE_INFO[role].name}`}
-                  className="absolute left-1 top-1 flex h-7 w-7 items-center justify-center rounded-full border border-[#f0d89a] bg-[#120d0a]/90 text-lg leading-none text-gold active:scale-95"
-                >
-                  −
-                </button>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-
       <SectionHeading>Host settings</SectionHeading>
       <Panel>
         <div className="space-y-6">
@@ -291,41 +202,151 @@ export function LobbyScreen({
           )}
         </div>
       </Panel>
+    </>
+  );
 
-      {view.me.isHost ? (
-        <section className="mt-8 space-y-4">
-          <label className="block">
-            <span className="small-caps tracking-[0.2em] text-gold">
-              Day lasts {Math.round(timer / 60)} min
-            </span>
-            <input
-              type="range"
-              min={60}
-              max={900}
-              step={30}
-              value={timer}
-              onChange={(event) => setTimer(Number(event.target.value))}
-              className="mt-2 w-full accent-[#d4a85a]"
-            />
-          </label>
-          <Button onClick={() => onSettings(settings())} variant="ghost">
-            Save setup
-          </Button>
-          {errors.map((error) => (
-            <p key={error} className="text-center text-[#e08a78]">
-              {error}
+  return (
+    <>
+      <Title kicker="The village gathers">Room {view.room.code}</Title>
+      {/* Desktop: room, players and host settings on the left; the deck and
+          deal controls on the right. Phones keep the original order (room,
+          deck, settings, deal), so the settings panel is placed in both
+          columns and only one copy shows at each size. */}
+      <Columns
+        left={
+          <>
+          <Panel className="text-center">
+            <p className="text-muted">Share the code or link. Everyone plays on their own phone.</p>
+            <p className="mt-2 font-[family-name:var(--font-display)] text-5xl tracking-[0.2em] text-gold">
+              {view.room.code}
             </p>
-          ))}
-          <Button
-            onClick={() => onStart(settings())}
-            disabled={playerCount < 3 || errors.length > 0}
-          >
-            Deal the cards
-          </Button>
-        </section>
-      ) : (
-        <p className="mt-8 text-center text-muted">Waiting for the host to deal.</p>
-      )}
+            <div className="mt-4">
+              <Button onClick={copyLink} variant="ghost">
+                {copied ? "Link copied" : "Copy invite link"}
+              </Button>
+            </div>
+          </Panel>
+
+          <SectionHeading>Villagers ({playerCount})</SectionHeading>
+          <ul className="space-y-2">
+            {view.room.players.map((player) => (
+              <li
+                key={player.id}
+                className="flex min-h-13 items-center justify-between rounded-lg border border-line bg-panel/80 px-4"
+              >
+                <span className="text-lg">
+                  {player.name}
+                  {player.isHost ? <span className="small-caps ml-2 text-sm text-gold">host</span> : null}
+                  {player.id === view.me.id ? <span className="small-caps ml-2 text-sm text-muted">you</span> : null}
+                </span>
+                {view.me.isHost && !player.isHost ? (
+                  <button
+                    type="button"
+                    className="small-caps min-h-11 px-2 text-[#e08a78]"
+                    onClick={() => onKick(player.id)}
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+
+            <div className="hidden lg:flex lg:flex-col">{hostSettings}</div>
+          </>
+        }
+        right={
+          <div className="flex flex-col lg:-mt-8">
+          <SectionHeading>
+            Cards in play ({deck.length}/{needed})
+          </SectionHeading>
+          {view.me.isHost ? (
+            <p className="-mt-1 mb-3 text-center text-sm text-muted">
+              Tap a card to add a copy; tapping a full card clears it. Use − to remove one.{" "}
+              <button type="button" className="text-gold underline underline-offset-4" onClick={applyPreset}>
+                Use recommended
+              </button>
+            </p>
+          ) : null}
+          <div className="grid grid-cols-3 gap-3 lg:grid-cols-4">
+            {rolesInWakeOrder.map((role) => {
+              const used = counts[role];
+              return (
+                <div key={role} className="relative">
+                  <button
+                    type="button"
+                    disabled={!view.me.isHost}
+                    onClick={() => cycle(role)}
+                    aria-label={`${ROLE_INFO[role].name}: ${used} of ${ROLE_COPIES[role]} in play. Tap to add one.`}
+                    className={`relative block w-full text-left transition-[opacity,filter,transform] duration-150 active:scale-[0.97] disabled:active:scale-100 ${
+                      used ? "" : "opacity-45 grayscale-[60%]"
+                    }`}
+                  >
+                    <MiniRole role={role} />
+                    <span
+                      className={`absolute right-1 top-1 min-w-7 rounded-full border px-1.5 text-center font-[family-name:var(--font-display)] text-sm ${
+                        used
+                          ? "border-[#f0d89a] bg-gold text-[#1c120a]"
+                          : "border-line bg-panel text-muted"
+                      }`}
+                    >
+                      {used}/{ROLE_COPIES[role]}
+                    </span>
+                  </button>
+                  {/* Roles with several copies get a − so you can step back down. */}
+                  {view.me.isHost && ROLE_COPIES[role] > 1 && used > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => removeOne(role)}
+                      aria-label={`Remove one ${ROLE_INFO[role].name}`}
+                      className="absolute left-1 top-1 flex h-7 w-7 items-center justify-center rounded-full border border-[#f0d89a] bg-[#120d0a]/90 text-lg leading-none text-gold active:scale-95"
+                    >
+                      −
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+
+            <div className="flex flex-col lg:hidden">{hostSettings}</div>
+          {view.me.isHost ? (
+            <section className="mt-8 space-y-4">
+              <label className="block">
+                <span className="small-caps tracking-[0.2em] text-gold">
+                  Day lasts {Math.round(timer / 60)} min
+                </span>
+                <input
+                  type="range"
+                  min={60}
+                  max={900}
+                  step={30}
+                  value={timer}
+                  onChange={(event) => setTimer(Number(event.target.value))}
+                  className="mt-2 w-full accent-[#d4a85a]"
+                />
+              </label>
+              <Button onClick={() => onSettings(settings())} variant="ghost">
+                Save setup
+              </Button>
+              {errors.map((error) => (
+                <p key={error} className="text-center text-[#e08a78]">
+                  {error}
+                </p>
+              ))}
+              <Button
+                onClick={() => onStart(settings())}
+                disabled={playerCount < 3 || errors.length > 0}
+              >
+                Deal the cards
+              </Button>
+            </section>
+          ) : (
+            <p className="mt-8 text-center text-muted">Waiting for the host to deal.</p>
+          )}
+          </div>
+        }
+      />
       <FanNotice />
     </>
   );

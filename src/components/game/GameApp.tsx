@@ -12,6 +12,7 @@ import {
   ErrorBanner,
   FanNotice,
   HostResetButton,
+  Narrow,
   NightProgressBar,
   Shell,
   Title,
@@ -284,7 +285,7 @@ export function GameApp({ code }: { code?: string }) {
   }
 
   return (
-    <Shell>
+    <Shell wide>
       <ErrorBanner message={error} onDismiss={() => setError(null)} />
       {view.waitingOn ? <WaitingOnBanner waiting={view.waitingOn} /> : null}
       <PhaseView
@@ -370,7 +371,7 @@ function PhaseView({
       );
     case "night":
       return (
-        <>
+        <Narrow>
           {view.night ? (
             <NightProgressBar
               progress={view.night}
@@ -382,7 +383,7 @@ function PhaseView({
             onAction={onAction}
             onDismissFlash={onDismissFlash}
           />
-        </>
+        </Narrow>
       );
     case "day":
       return <DayScreen view={view} onStartVote={onStartVote} />;

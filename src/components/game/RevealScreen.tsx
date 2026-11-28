@@ -1,6 +1,6 @@
 import { MiniRole } from "@/components/cards/RoleCard";
 import { NightTimeline } from "@/components/game/NightTimeline";
-import { Button, Panel, SectionHeading, Title } from "@/components/game/ui";
+import { Button, Columns, Panel, SectionHeading, Title } from "@/components/game/ui";
 import {
   CENTER_LABELS,
   displayName,
@@ -72,131 +72,145 @@ export function RevealScreen({
         </p>
       </div>
 
-      {/* 2. Who was who */}
-      <Panel className="mt-6">
-        <div className="flex flex-wrap justify-center gap-x-8 gap-y-5">
-          {groups
-            .filter((group) => group.role === "werewolf" || group.ids.length > 0)
-            .map((group) => (
-              <section
-                key={group.role}
-                className={group.role === "werewolf" ? "basis-full" : ""}
-              >
-                <h2
-                  className="small-caps mb-2 text-center text-base tracking-[0.25em]"
-                  style={{ color: group.role === "werewolf" ? "#e0715f" : "#d4a85a" }}
-                >
-                  {group.ids.length === 1 ? group.title : group.plural}
-                </h2>
-                {group.ids.length ? (
-                  <ul className="flex flex-wrap justify-center gap-4">
-                    {group.ids.map((id) => (
-                      <PlayerCard
-                        key={id}
-                        name={nameOf(id)}
-                        role={reveal.finalPlayers[id]!}
-                        startedAs={reveal.originalPlayers[id]}
-                        died={died(id)}
-                      />
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-center text-muted">
-                    No player was a Werewolf.{" "}
-                    {wolvesInCenter
-                      ? `${wolvesInCenter === 1 ? "The Werewolf was" : "Both Werewolves were"} in the center.`
-                      : null}
-                  </p>
-                )}
-              </section>
-            ))}
-        </div>
-      </Panel>
-
-      {/* 3. The vote */}
-      <SectionHeading>The vote</SectionHeading>
-      <ul className="divide-y divide-line/60 overflow-hidden rounded-xl border border-line bg-panel/70">
-        {byVotes.map((player) => {
-          const count = reveal.tally[player.id] ?? 0;
-          return (
-            <li key={player.id} className="flex min-h-12 items-center gap-3 px-4">
-              <span className="flex-1 text-lg">{player.name}</span>
-              <span className="flex gap-1" aria-hidden>
-                {Array.from({ length: count }, (_, i) => (
-                  <span key={i} className="h-2.5 w-2.5 rounded-full bg-gold" />
+      {/* Desktop: who was who and the vote on the left, every card on the right. */}
+      <Columns
+        className="lg:mt-2"
+        left={
+          <>
+          {/* 2. Who was who */}
+          <Panel className="mt-6">
+            <div className="flex flex-wrap justify-center gap-x-8 gap-y-5">
+              {groups
+                .filter((group) => group.role === "werewolf" || group.ids.length > 0)
+                .map((group) => (
+                  <section
+                    key={group.role}
+                    className={group.role === "werewolf" ? "basis-full" : ""}
+                  >
+                    <h2
+                      className="small-caps mb-2 text-center text-base tracking-[0.25em]"
+                      style={{ color: group.role === "werewolf" ? "#e0715f" : "#d4a85a" }}
+                    >
+                      {group.ids.length === 1 ? group.title : group.plural}
+                    </h2>
+                    {group.ids.length ? (
+                      <ul className="flex flex-wrap justify-center gap-4">
+                        {group.ids.map((id) => (
+                          <PlayerCard
+                            key={id}
+                            name={nameOf(id)}
+                            role={reveal.finalPlayers[id]!}
+                            startedAs={reveal.originalPlayers[id]}
+                            died={died(id)}
+                          />
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-center text-muted">
+                        No player was a Werewolf.{" "}
+                        {wolvesInCenter
+                          ? `${wolvesInCenter === 1 ? "The Werewolf was" : "Both Werewolves were"} in the center.`
+                          : null}
+                      </p>
+                    )}
+                  </section>
                 ))}
-              </span>
-              <span className="w-16 text-right text-sm text-muted">
-                {count} vote{count === 1 ? "" : "s"}
-              </span>
-              {died(player.id) ? (
-                <span className="small-caps rounded-sm bg-[#7a2116] px-2 py-0.5 text-sm tracking-[0.1em] text-[#f6e6d4]">
-                  died
-                </span>
-              ) : (
-                <span className="w-[3.1rem]" />
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {reveal.deaths.length === 0 ? (
-        <p className="mt-2 text-center text-muted">
-          Nobody got more than one vote, so nobody died.
-        </p>
-      ) : null}
-      {reveal.runoff ? (
-        <div className="mt-3 rounded-xl border border-line/70 bg-panel/50 px-4 py-3">
-          <p className="small-caps text-sm tracking-[0.2em] text-gold">Tie-break</p>
-          <p className="mt-1 leading-snug text-[#e6d8ba]">
-            {[...reveal.runoff.candidates]
-              .sort((a, b) => (reveal.runoff!.tally[b] ?? 0) - (reveal.runoff!.tally[a] ?? 0))
-              .map((id) => {
-                const n = reveal.runoff!.tally[id] ?? 0;
-                return `${nameOf(id)} ${n} vote${n === 1 ? "" : "s"}`;
-              })
-              .join(" · ")}
-          </p>
-          <p className="text-sm text-muted">
-            {reveal.runoff.seats === 1 ? "One place" : `${reveal.runoff.seats} places`} decided by a
-            one-vote tie-break between the tied players.
-          </p>
-        </div>
-      ) : null}
+            </div>
+          </Panel>
 
-      {/* 4. Every card */}
-      <SectionHeading>Every card</SectionHeading>
-      <ul className="space-y-2">
-        {players.map((player) => (
-          <CardRow
-            key={player.id}
-            label={player.name}
-            reveal={reveal}
-            start={reveal.originalPlayers[player.id]}
-            end={reveal.finalPlayers[player.id]}
-            died={died(player.id)}
-            note={
-              (reveal.votes[player.id] ?? []).length
-                ? `Voted for ${(reveal.votes[player.id] ?? []).map(nameOf).join(" & ")}`
-                : "Skipped their vote"
-            }
-          />
-        ))}
-      </ul>
-      <h3 className="small-caps mt-6 mb-2 text-center text-sm tracking-[0.25em] text-muted">
-        The center
-      </h3>
-      <ul className="space-y-2">
-        {reveal.finalCenter.map((role, index) => (
-          <CardRow
-            key={index}
-            label={CENTER_LABELS[index] ?? `Center ${index + 1}`}
-            reveal={reveal}
-            start={reveal.originalCenter[index]}
-            end={role}
-          />
-        ))}
-      </ul>
+          {/* 3. The vote */}
+          <SectionHeading>The vote</SectionHeading>
+          <ul className="divide-y divide-line/60 overflow-hidden rounded-xl border border-line bg-panel/70">
+            {byVotes.map((player) => {
+              const count = reveal.tally[player.id] ?? 0;
+              return (
+                <li key={player.id} className="flex min-h-12 items-center gap-3 px-4">
+                  <span className="flex-1 text-lg">{player.name}</span>
+                  <span className="flex gap-1" aria-hidden>
+                    {Array.from({ length: count }, (_, i) => (
+                      <span key={i} className="h-2.5 w-2.5 rounded-full bg-gold" />
+                    ))}
+                  </span>
+                  <span className="w-16 text-right text-sm text-muted">
+                    {count} vote{count === 1 ? "" : "s"}
+                  </span>
+                  {died(player.id) ? (
+                    <span className="small-caps rounded-sm bg-[#7a2116] px-2 py-0.5 text-sm tracking-[0.1em] text-[#f6e6d4]">
+                      died
+                    </span>
+                  ) : (
+                    <span className="w-[3.1rem]" />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {reveal.deaths.length === 0 ? (
+            <p className="mt-2 text-center text-muted">
+              Nobody got more than one vote, so nobody died.
+            </p>
+          ) : null}
+          {reveal.runoff ? (
+            <div className="mt-3 rounded-xl border border-line/70 bg-panel/50 px-4 py-3">
+              <p className="small-caps text-sm tracking-[0.2em] text-gold">Tie-break</p>
+              <p className="mt-1 leading-snug text-[#e6d8ba]">
+                {[...reveal.runoff.candidates]
+                  .sort((a, b) => (reveal.runoff!.tally[b] ?? 0) - (reveal.runoff!.tally[a] ?? 0))
+                  .map((id) => {
+                    const n = reveal.runoff!.tally[id] ?? 0;
+                    return `${nameOf(id)} ${n} vote${n === 1 ? "" : "s"}`;
+                  })
+                  .join(" · ")}
+              </p>
+              <p className="text-sm text-muted">
+                {reveal.runoff.seats === 1 ? "One place" : `${reveal.runoff.seats} places`} decided by a
+                one-vote tie-break between the tied players.
+              </p>
+            </div>
+          ) : null}
+
+          </>
+        }
+        right={
+          // Line up with the panel on the left (its heading has a top gap).
+          <div className="flex flex-col lg:-mt-2">
+          {/* 4. Every card */}
+          <SectionHeading>Every card</SectionHeading>
+          <ul className="space-y-2">
+            {players.map((player) => (
+              <CardRow
+                key={player.id}
+                label={player.name}
+                reveal={reveal}
+                start={reveal.originalPlayers[player.id]}
+                end={reveal.finalPlayers[player.id]}
+                died={died(player.id)}
+                note={
+                  (reveal.votes[player.id] ?? []).length
+                    ? `Voted for ${(reveal.votes[player.id] ?? []).map(nameOf).join(" & ")}`
+                    : "Skipped their vote"
+                }
+              />
+            ))}
+          </ul>
+          <h3 className="small-caps mt-6 mb-2 text-center text-sm tracking-[0.25em] text-muted">
+            The center
+          </h3>
+          <ul className="space-y-2">
+            {reveal.finalCenter.map((role, index) => (
+              <CardRow
+                key={index}
+                label={CENTER_LABELS[index] ?? `Center ${index + 1}`}
+                reveal={reveal}
+                start={reveal.originalCenter[index]}
+                end={role}
+              />
+            ))}
+          </ul>
+
+          </div>
+        }
+      />
 
       {/* 5. Order of the night (collapsed) */}
       <details className="group mt-8 rounded-xl border border-line bg-panel/70">
@@ -224,7 +238,7 @@ export function RevealScreen({
       </details>
 
       {view.me.isHost ? (
-        <div className="mt-10">
+        <div className="mt-10 lg:mx-auto lg:w-full lg:max-w-sm">
           <Button onClick={onRestart}>Play again</Button>
         </div>
       ) : (
